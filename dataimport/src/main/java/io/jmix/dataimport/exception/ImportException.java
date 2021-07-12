@@ -1,0 +1,51 @@
+/*
+ * Copyright 2021 Haulmont.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.jmix.dataimport.exception;
+
+import io.jmix.dataimport.model.result.ImportErrorType;
+
+public class ImportException extends RuntimeException {
+    protected ImportErrorType errorType;
+    protected String errorMessage;
+
+    public ImportException(ImportErrorType errorType, String errorMessage) {
+        this.errorType = errorType;
+        this.errorMessage = errorMessage;
+    }
+
+    public ImportException(Throwable cause, ImportErrorType errorType, String errorMessage) {
+        super(cause);
+        this.errorType = errorType;
+        this.errorMessage = errorMessage;
+    }
+
+    public ImportErrorType getErrorType() {
+        return errorType;
+    }
+
+    public void setErrorType(ImportErrorType errorType) {
+        this.errorType = errorType;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+}
