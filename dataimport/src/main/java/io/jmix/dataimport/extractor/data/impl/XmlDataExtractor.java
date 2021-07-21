@@ -18,7 +18,7 @@ package io.jmix.dataimport.extractor.data.impl;
 
 import io.jmix.core.common.util.Dom4j;
 import io.jmix.dataimport.extractor.data.*;
-import io.jmix.dataimport.model.configuration.ImportConfiguration;
+import io.jmix.dataimport.configuration.ImportConfiguration;
 import org.apache.commons.collections4.CollectionUtils;
 import org.dom4j.Document;
 import org.dom4j.Element;
@@ -34,12 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component("datimp_XmlDataExtractor")
-public class XmlDataExtractor implements DataExtractor {
-    @Override
-    public ImportedData extract(String content) {
-        Document document = Dom4j.readDocument(content);
-        return getImportedData(document);
-    }
+public class XmlDataExtractor implements ImportedDataExtractor {
 
     protected ImportedData getImportedData(Document document) {
         Element rootElement = document.getRootElement();
@@ -49,7 +44,7 @@ public class XmlDataExtractor implements DataExtractor {
             List<Element> elements = rootElement.elements();
             if (CollectionUtils.isNotEmpty(elements)) {
                 int itemIndex = 1;
-                List<String> fieldNames = new ArrayList<>();
+                List<String> dataFieldNames = new ArrayList<>();
                 for (Element element : elements) {
                     ImportedDataItem importedDataItem = createImportedDataItem(element, itemIndex);
                     importedData.addItem(importedDataItem);
@@ -57,22 +52,20 @@ public class XmlDataExtractor implements DataExtractor {
 
                     element.elements().forEach(child -> {
                         String name = child.getName();
-                        if (!fieldNames.contains(name)) {
-                            fieldNames.add(name);
+                        if (!dataFieldNames.contains(name)) {
+                            dataFieldNames.add(name);
                         }
                     });
                 }
-                importedData.setFieldNames(fieldNames);
-                return importedData;
+                importedData.setDataFieldNames(dataFieldNames);
             }
         } else {
             ImportedDataItem importedDataItem = createImportedDataItem(rootElement, 1);
             importedData.addItem(importedDataItem);
-            importedData.setFieldNames(rootElement.elements()
+            importedData.setDataFieldNames(rootElement.elements()
                     .stream().map(Node::getName)
                     .distinct()
                     .collect(Collectors.toList()));
-            return importedData;
         }
         return importedData;
     }
@@ -86,23 +79,30 @@ public class XmlDataExtractor implements DataExtractor {
 
     protected ImportedObject createImportedObject(Element parentElement) {
         ImportedObject objectValue = new ImportedObject();
+        objectValue.setDataFieldName(parentElement.getName());
         readRawValues(parentElement, objectValue);
         return objectValue;
     }
 
-    protected void readRawValues(Element parentElement, ImportedObject importedObject) {
-        parentElement.elements().stream().filter(Element::isTextOnly).forEach(element -> importedObject.addRawValue(element.getName(), element.getTextTrim()));
+    protected void readRawValues(Element parentElement, RawValuesSource rawValuesSource) {
+        parentElement.elements().stream().filter(Element::isTextOnly).forEach(element -> rawValuesSource.addRawValue(element.getName(), element.getTextTrim()));
         Map<String, List<Element>> elementsByTag = groupElementsByTag(parentElement);
         elementsByTag.forEach((tagName, elements) -> {
             if (elements.size() == 1) {
                 Element element = elements.get(0);
                 if (containsSimpleValues(element)) {
-                    importedObject.addRawValue(tagName, createImportedObject(elements.get(0)));
+                    ImportedObject importedObject = createImportedObject(elements.get(0));
+                    importedObject.setDataFieldName(tagName);
+                    rawValuesSource.addRawValue(tagName, importedObject);
                 } else {
-                    importedObject.addRawValue(tagName, createImportedObjectList(element.elements()));
+                    ImportedObjectList importedObjectList = createImportedObjectList(element.elements());
+                    importedObjectList.setDataFieldName(tagName);
+                    rawValuesSource.addRawValue(tagName, importedObjectList);
                 }
             } else if (elements.size() > 1) {
-                importedObject.addRawValue(tagName, createImportedObjectList(elements));
+                ImportedObjectList importedObjectList = createImportedObjectList(elements);
+                importedObjectList.setDataFieldName(tagName);
+                rawValuesSource.addRawValue(tagName, importedObjectList);
             }
         });
     }

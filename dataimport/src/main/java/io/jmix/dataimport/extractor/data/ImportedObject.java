@@ -22,31 +22,39 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class ImportedObject {
+public class ImportedObject implements RawValuesSource {
+    protected String dataFieldName;
     protected Map<String, Object> rawValues = new HashMap<>();
 
     public Map<String, Object> getRawValues() {
         return rawValues;
     }
 
-    public ImportedObject setRawValues(Map<String, Object> rawValues) {
+    public void setRawValues(Map<String, Object> rawValues) {
         this.rawValues = rawValues;
-        return this;
     }
 
-    public ImportedObject addRawValue(String fieldName, @Nullable Object value) {
-        this.rawValues.put(fieldName, value);
+    public String getDataFieldName() {
+        return dataFieldName;
+    }
+
+    public void setDataFieldName(String dataFieldName) {
+        this.dataFieldName = dataFieldName;
+    }
+
+    public RawValuesSource addRawValue(String dataFieldName, @Nullable Object value) {
+        this.rawValues.put(dataFieldName, value);
         return this;
     }
 
     @Nullable
-    public Object getRawValue(String fieldName) {
-        return rawValues.get(fieldName);
+    public Object getRawValue(String dataFieldName) {
+        return rawValues.get(dataFieldName);
     }
 
     @Override
     public String toString() {
-        return String.format("{%s}", rawValues.entrySet().stream()
+        return String.format("Field: %s, Data: {%s}", dataFieldName, rawValues.entrySet().stream()
                 .map(rawValueEntry -> String.format("%s: %s", rawValueEntry.getKey(), getValueString(rawValueEntry)))
                 .collect(Collectors.joining(", ")));
     }

@@ -18,10 +18,20 @@ package io.jmix.dataimport.extractor.data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ImportedObjectList {
+    protected String dataFieldName;
     protected List<ImportedObject> importedObjects = new ArrayList<>();
+
+    public String getDataFieldName() {
+        return dataFieldName;
+    }
+
+    public void setDataFieldName(String dataFieldName) {
+        this.dataFieldName = dataFieldName;
+    }
 
     public List<ImportedObject> getImportedObjects() {
         return importedObjects;
@@ -38,7 +48,8 @@ public class ImportedObjectList {
 
     @Override
     public String toString() {
-        return String.format("[%s]", importedObjects.stream()
+        return String.format("Field: %s, objects: [%s]", dataFieldName, importedObjects.stream()
+                .filter(Objects::nonNull)
                 .map(ImportedObject::toString)
                 .collect(Collectors.joining(", ")));
     }

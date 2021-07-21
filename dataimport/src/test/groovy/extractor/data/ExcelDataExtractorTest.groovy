@@ -19,8 +19,9 @@ package extractor.data
 
 import io.jmix.core.Resources
 import io.jmix.dataimport.extractor.data.impl.ExcelDataExtractor
-import io.jmix.dataimport.model.configuration.ImportConfiguration
+import io.jmix.dataimport.configuration.ImportConfiguration
 import org.apache.commons.io.IOUtils
+import org.apache.commons.math3.stat.descriptive.summary.Product
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
 
@@ -35,14 +36,14 @@ class ExcelDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/xlsx/products.xlsx")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Product", "products-from-excel");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-excel");
 
         when: 'imported data extracted'
         def importedData = excelDataExtractor.extract(inputStream, importConfiguration)
 
         then:
-        importedData.fieldNames.size() == 3
-        importedData.fieldNames == ['Product Name', 'Special', 'Price']
+        importedData.dataFieldNames.size() == 3
+        importedData.dataFieldNames == ['Product Name', 'Special', 'Price']
 
         importedData.items.size() == 2
         def firstProduct = importedData.items.get(0)
@@ -64,14 +65,14 @@ class ExcelDataExtractorTest extends DataImportSpec {
         given:
         def inputBytes = IOUtils.toByteArray(resources.getResourceAsStream("test_support/input_data_files/xlsx/products.xlsx"))
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Product", "products-from-excel")
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-excel")
 
         when: 'imported data extracted'
         def importedData = excelDataExtractor.extract(inputBytes, importConfiguration)
 
         then:
-        importedData.fieldNames.size() == 3
-        importedData.fieldNames == ['Product Name', 'Special', 'Price']
+        importedData.dataFieldNames.size() == 3
+        importedData.dataFieldNames == ['Product Name', 'Special', 'Price']
 
         importedData.items.size() == 2
         def firstProduct = importedData.items.get(0)
@@ -87,13 +88,5 @@ class ExcelDataExtractorTest extends DataImportSpec {
         secondProduct.getRawValue( 'Product Name') == 'Fullriver Sealed Battery 6V'
         secondProduct.getRawValue( 'Special') == 'No'
         secondProduct.getRawValue( 'Price') == '5.10'
-    }
-
-    def "test import from string not supported"() {
-        when:
-        excelDataExtractor.extract("")
-
-        then:
-        thrown(UnsupportedOperationException)
     }
 }

@@ -16,14 +16,18 @@
 
 package extractor.data
 
+
 import io.jmix.core.Resources
+import io.jmix.dataimport.exception.ImportException
 import io.jmix.dataimport.extractor.data.ImportedObject
 import io.jmix.dataimport.extractor.data.ImportedObjectList
 import io.jmix.dataimport.extractor.data.impl.JsonDataExtractor
-import io.jmix.dataimport.model.configuration.ImportConfiguration
+import io.jmix.dataimport.configuration.ImportConfiguration
 import org.apache.commons.compress.utils.CharsetNames
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
+import test_support.entity.Customer
+import test_support.entity.Product
 
 class JsonDataExtractorTest extends DataImportSpec {
     @Autowired
@@ -36,7 +40,7 @@ class JsonDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/json/customers_and_addresses.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Customer", "customers-and-addresses");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-addresses");
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(inputStream, importConfiguration)
@@ -50,22 +54,11 @@ class JsonDataExtractorTest extends DataImportSpec {
         }
     }
 
-    def "test read imported data from string"() {
-        given:
-        def jsonString = resources.getResourceAsString("test_support/input_data_files/json/customers_and_addresses.json")
-
-        when: 'imported data extracted'
-        def importedData = jsonDataExtractor.extract(jsonString)
-
-        then:
-        importedData.items.size() == 3
-    }
-
     def "test read imported data from byte array"() {
         given:
         def jsonString = resources.getResourceAsString("test_support/input_data_files/json/customers_and_addresses.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Customer", "customers-and-addresses");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-addresses");
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(jsonString.getBytes(CharsetNames.UTF_8), importConfiguration)
@@ -78,14 +71,14 @@ class JsonDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/json/one_product.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Product", "products-from-json");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-json");
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(inputStream, importConfiguration)
 
         then:
-        importedData.fieldNames.size() == 3
-        importedData.fieldNames == ['name', 'special', 'price']
+        importedData.dataFieldNames.size() == 3
+        importedData.dataFieldNames == ['name', 'special', 'price']
 
         importedData.items.size() == 1
         def firstProduct = importedData.items.get(0)
@@ -99,14 +92,14 @@ class JsonDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/json/array_of_products.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Product", "products-from-json");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-json");
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(inputStream, importConfiguration)
 
         then:
-        importedData.fieldNames.size() == 3
-        importedData.fieldNames == ['name', 'special', 'price']
+        importedData.dataFieldNames.size() == 3
+        importedData.dataFieldNames == ['name', 'special', 'price']
 
         importedData.items.size() == 2
         def firstProduct = importedData.items.get(0)
@@ -126,37 +119,39 @@ class JsonDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/json/customers_and_orders.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Customer", "customers-and-orders");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-orders");
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(inputStream, importConfiguration)
 
         then:
-        importedData.fieldNames == ['name', 'email', 'orders']
+        importedData.dataFieldNames == ['name', 'email', 'orders']
 
         def firstCustomer = importedData.items.get(0)
-        def emptyOrders = firstCustomer.getRawValue('orders')
-        emptyOrders.class == ImportedObjectList
-        ((ImportedObjectList) emptyOrders).importedObjects.size() == 0
+        def emptyOrders = firstCustomer.getRawValue('orders') as ImportedObjectList
+        emptyOrders.dataFieldName == 'orders'
+        emptyOrders.importedObjects.size() == 0
     }
 
     def "test non-empty imported list object"() {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/json/customers_and_orders.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Customer", "customers-and-orders");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-orders");
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(inputStream, importConfiguration)
 
         then:
-        importedData.fieldNames == ['name', 'email', 'orders']
+        importedData.dataFieldNames == ['name', 'email', 'orders']
 
         def importedCustomerItem = importedData.items.get(1)
         def emptyOrders = (ImportedObjectList) importedCustomerItem.getRawValue('orders')
+        emptyOrders.dataFieldName == 'orders'
         emptyOrders.importedObjects.size() == 1
 
         def importedOrderObject = emptyOrders.importedObjects.get(0)
+        importedOrderObject.dataFieldName == null
         importedOrderObject.getRawValue("number") == '#001'
         importedOrderObject.getRawValue("amount") == '50.5'
         importedOrderObject.getRawValue("date") == '12/02/2021 12:00'
@@ -166,13 +161,13 @@ class JsonDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/json/customers_and_orders.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Customer", "customers-and-orders");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-orders");
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(inputStream, importConfiguration)
 
         then:
-        importedData.fieldNames == ['name', 'email', 'orders']
+        importedData.dataFieldNames == ['name', 'email', 'orders']
 
         def firstCustomer = importedData.items.get(2)
         firstCustomer.getRawValue('email') == null
@@ -183,14 +178,14 @@ class JsonDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/json/customers_and_addresses.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Customer", "customers-and-addresses");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-addresses");
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(inputStream, importConfiguration)
 
         then:
-        importedData.fieldNames.size() == 3
-        importedData.fieldNames == ['name', 'email', 'defaultAddress']
+        importedData.dataFieldNames.size() == 3
+        importedData.dataFieldNames == ['name', 'email', 'defaultAddress']
 
         importedData.items.size() == 3
         def customerItem = importedData.items.get(0)
@@ -198,6 +193,7 @@ class JsonDataExtractorTest extends DataImportSpec {
         customerItem.getRawValue('name') == 'Parker Leighton'
         customerItem.getRawValue('email') == 'leighton@mail.com'
         def defaultAddress = (ImportedObject) customerItem.getRawValue('defaultAddress')
+        defaultAddress.dataFieldName == 'defaultAddress'
         defaultAddress.rawValues.size() == 0
     }
 
@@ -205,14 +201,14 @@ class JsonDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/json/customers_and_addresses.json")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration("sales_Customer", "customers-and-addresses");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-addresses")
 
         when: 'imported data extracted'
         def importedData = jsonDataExtractor.extract(inputStream, importConfiguration)
 
         then:
-        importedData.fieldNames.size() == 3
-        importedData.fieldNames == ['name', 'email', 'defaultAddress']
+        importedData.dataFieldNames.size() == 3
+        importedData.dataFieldNames == ['name', 'email', 'defaultAddress']
 
         importedData.items.size() == 3
         def customerItem = importedData.items.get(1)
@@ -220,8 +216,31 @@ class JsonDataExtractorTest extends DataImportSpec {
         customerItem.getRawValue('name') == 'Shelby Robinson'
         customerItem.getRawValue('email') == 'robinson@mail.com'
         def defaultAddress = (ImportedObject) customerItem.getRawValue('defaultAddress')
+        defaultAddress.dataFieldName == 'defaultAddress'
         defaultAddress.rawValues.size() == 2
         defaultAddress.getRawValue('name') == 'Home'
         defaultAddress.getRawValue('fullAddress') == 'Samara'
+    }
+
+    def "test invalid json byte array"() {
+        given:
+        String jsonString = "invalid json string"
+
+        when: 'imported data extracted'
+        jsonDataExtractor.extract(jsonString.getBytes(), null)
+
+        then:
+        thrown ImportException
+    }
+
+    def "test invalid json input stream"() {
+        given:
+        String jsonString = "invalid json string"
+
+        when: 'imported data extracted'
+        jsonDataExtractor.extract(new ByteArrayInputStream(jsonString.getBytes()), null)
+
+        then:
+        thrown ImportException
     }
 }

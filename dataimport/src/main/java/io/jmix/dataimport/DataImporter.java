@@ -17,13 +17,18 @@
 package io.jmix.dataimport;
 
 import io.jmix.dataimport.extractor.data.ImportedData;
-import io.jmix.dataimport.model.configuration.ImportConfiguration;
-import io.jmix.dataimport.model.result.ImportResult;
+import io.jmix.dataimport.configuration.ImportConfiguration;
+import io.jmix.dataimport.result.ImportResult;
 
 import java.io.InputStream;
 
+/**
+ * API to import entities from the input data (XLSX, CSV, JSON, XML) using specified import configuration.
+ *
+ * @see ImportConfiguration
+ */
 public interface DataImporter {
-    ImportResult importData(ImportConfiguration configuration, String content);
+    ImportResult importData(ImportConfiguration configuration, byte[] content);
 
     ImportResult importData(ImportConfiguration configuration, InputStream inputStream);
 

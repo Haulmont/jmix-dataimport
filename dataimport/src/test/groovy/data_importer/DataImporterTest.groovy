@@ -16,40 +16,37 @@
 
 package data_importer
 
-import io.jmix.core.FetchPlan
+
 import io.jmix.core.Resources
 import io.jmix.dataimport.DataImporter
-import io.jmix.dataimport.builder.ImportConfigurationBuilders
-import io.jmix.dataimport.model.configuration.ImportTransactionStrategy
-import io.jmix.dataimport.model.configuration.mapping.ReferenceEntityPolicy
+import io.jmix.dataimport.configuration.ImportConfigurationBuilder
+import io.jmix.dataimport.configuration.ImportTransactionStrategy
+import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
+import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
+import io.jmix.dataimport.result.EntityImportErrorType
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
-import test_support.entity.Order
+import test_support.entity.OrderLine
 import test_support.entity.Product
-
-import java.text.SimpleDateFormat
 
 class DataImporterTest extends DataImportSpec {
     @Autowired
     protected DataImporter dataImporter
     @Autowired
-    protected ImportConfigurationBuilders configurationBuilders
-    @Autowired
     protected Resources resources
 
-
-    def 'test successful import in single transaction'() {
+    def 'test successful import result'() {
         given:
-        def importConfig = configurationBuilders.byEntityClass(Product, "import-product")
+        def importConfig = ImportConfigurationBuilder.of(Product, "import-product")
                 .addSimplePropertyMapping("name", "name")
                 .addSimplePropertyMapping("price", "price")
                 .addSimplePropertyMapping("special", "special")
                 .withInputDataFormat("xml")
                 .withBooleanFormats("Yes", "No")
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
                 .build()
 
-        def xmlContent = resources.getResourceAsString("/test_support/input_data_files/xml/one_product.xml")
+        def xmlContent = resources.getResourceAsStream("/test_support/input_data_files/xml/one_product.xml")
 
         when: 'data imported'
         def result = dataImporter.importData(importConfig, xmlContent)
@@ -57,45 +54,36 @@ class DataImporterTest extends DataImportSpec {
         then:
         result.success
         result.importedEntityIds.size() == 1
-
-        def importedProduct = dataManager.load(Product)
-                .id(result.importedEntityIds.get(0))
-                .fetchPlan(FetchPlan.LOCAL)
-                .one() as Product
-        importedProduct.name == 'Cotek Battery Charger'
-        importedProduct.price == 30.1
-        importedProduct.special != null
-        !importedProduct.special
+        result.failedEntities.empty
+        result.configurationCode == importConfig.code
     }
 
-    def 'test successful import in transaction per entity from Excel'() {
+    def 'test failed import result'() {
         given:
-        def importConfig = configurationBuilders.byEntityClass(Order, "import-order")
-                .addSimplePropertyMapping("orderNumber", "Order Num")
-                .addSimplePropertyMapping("date", "Order Date")
-                .addSimplePropertyMapping("amount", "Order Amount")
-                .addAssociationPropertyMapping("customer.name", "Customer Name", ReferenceEntityPolicy.CREATE)
-                .addAssociationPropertyMapping("customer.email", "Customer Email", ReferenceEntityPolicy.CREATE)
-                .withInputDataFormat("xlsx")
-                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
-                .withDateFormat("dd/MM/yyyy HH:mm")
+        def importConfig = ImportConfigurationBuilder.of(OrderLine, "import-lines")
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('order')
+                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE_IF_MISSING)
+                        .addSimplePropertyMapping('orderNumber', 'orderNumber')
+                        .addSimplePropertyMapping('date', 'orderDate')
+                        .addSimplePropertyMapping('amount', 'orderAmount')
+                        .lookupByAllSimpleProperties()
+                        .build())
+                .addReferencePropertyMapping('product', 'name', 'productName', ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addSimplePropertyMapping("quantity", "quantity")
+                .withDateFormat('dd/MM/yyyy HH:mm')
+                .withInputDataFormat("xml")
+                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
                 .build()
-
-        def excelInputStream = resources.getResourceAsStream("/test_support/input_data_files/xlsx/orders.xlsx")
+        InputStream xmlContent = resources.getResourceAsStream("/test_support/input_data_files/xml/order_lines.xml")
 
         when: 'data imported'
-        def result = dataImporter.importData(importConfig, excelInputStream)
+        def importResult = dataImporter.importData(importConfig, xmlContent)
 
         then:
-        result.success
-        result.importedEntityIds.size() == 3
-        def customer = loadCustomer('John Dow')
-
-        def importedOrder = loadOrder(result.importedEntityIds.get(0), "order-with-customer")
-        importedOrder.orderNumber == '#123'
-        importedOrder.date == new SimpleDateFormat("dd/MM/yyyy HH:mm").parse('12/12/2020 12:30')
-        importedOrder.amount == 85.2
-        importedOrder.customer != null
-        importedOrder.customer == customer
+        !importResult.success
+        importResult.configurationCode == importConfig.code
+        importResult.numOfProcessedEntities == 0
+        importResult.importedEntityIds.size() == 0
+        importResult.errorMessage != null
     }
 }

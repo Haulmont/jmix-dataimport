@@ -20,4 +20,26 @@
         <property name="customer" fetchPlan="_base"/>
     </fetchPlan>
 
+    <fetchPlan class="test_support.entity.Customer" name="customer-with-bonus-card" extends="_base">
+        <property name="bonusCard" fetchPlan="_base"/>
+    </fetchPlan>
+
+    <fetchPlan class="test_support.entity.Customer" name="customer-with-orders" extends="_base">
+        <property name="orders" fetchPlan="_base"/>
+    </fetchPlan>
+
+    <fetchPlan class="test_support.entity.Order" name="order-full" extends="_base">
+        <property name="customer" fetchPlan="_base"/>
+        <property name="paymentDetails" fetchPlan="_base">
+            <property name="bonusCard" fetchPlan="_base"/>
+        </property>
+        <property name="lines" fetchPlan="_base">
+            <property name="product" fetchPlan="_base"/>
+        </property>
+    </fetchPlan>
+
+    <fetchPlan class="test_support.entity.OrderLine" name="orderLine-full" extends="_base">
+        <property name="order" fetchPlan="_base"/>
+        <property name="product" fetchPlan="_base"/>
+    </fetchPlan>
 </fetchPlans>

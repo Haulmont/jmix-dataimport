@@ -44,7 +44,7 @@ public class OrderLine {
 
     @NotNull
     @Column(name = "QUANTITY", nullable = false, precision = 19, scale = 3)
-    private BigDecimal quantity;
+    private Integer quantity;
 
     @JoinColumn(name = "PRODUCT_ID", nullable = false)
     @NotNull
@@ -143,11 +143,11 @@ public class OrderLine {
         this.version = version;
     }
 
-    public void setQuantity(BigDecimal quantity) {
+    public void setQuantity(Integer quantity) {
         this.quantity = quantity;
     }
 
-    public BigDecimal getQuantity() {
+    public Integer getQuantity() {
         return quantity;
     }
 

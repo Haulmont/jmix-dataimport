@@ -16,36 +16,19 @@
 
 package io.jmix.dataimport.exception;
 
-import io.jmix.dataimport.model.result.ImportErrorType;
-
 public class ImportException extends RuntimeException {
-    protected ImportErrorType errorType;
     protected String errorMessage;
 
-    public ImportException(ImportErrorType errorType, String errorMessage) {
-        this.errorType = errorType;
+    public ImportException(String errorMessage) {
         this.errorMessage = errorMessage;
     }
 
-    public ImportException(Throwable cause, ImportErrorType errorType, String errorMessage) {
+    public ImportException(Throwable cause, String errorMessage) {
         super(cause);
-        this.errorType = errorType;
         this.errorMessage = errorMessage;
-    }
-
-    public ImportErrorType getErrorType() {
-        return errorType;
-    }
-
-    public void setErrorType(ImportErrorType errorType) {
-        this.errorType = errorType;
     }
 
     public String getErrorMessage() {
         return errorMessage;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
     }
 }

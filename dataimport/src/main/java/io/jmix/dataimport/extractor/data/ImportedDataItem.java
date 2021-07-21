@@ -16,18 +16,41 @@
 
 package io.jmix.dataimport.extractor.data;
 
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ImportedDataItem extends ImportedObject {
+
+public class ImportedDataItem implements RawValuesSource {
+    protected Map<String, Object> rawValues = new HashMap<>();
     protected int itemIndex;
 
     public int getItemIndex() {
         return itemIndex;
     }
 
+    public Map<String, Object> getRawValues() {
+        return rawValues;
+    }
+
     public ImportedDataItem setItemIndex(int itemIndex) {
         this.itemIndex = itemIndex;
         return this;
+    }
+
+    public void setRawValues(Map<String, Object> rawValues) {
+        this.rawValues = rawValues;
+    }
+
+    public ImportedDataItem addRawValue(String dataFieldName, @Nullable Object value) {
+        this.rawValues.put(dataFieldName, value);
+        return this;
+    }
+
+    @Nullable
+    public Object getRawValue(String dataFieldName) {
+        return rawValues.get(dataFieldName);
     }
 
     @Override

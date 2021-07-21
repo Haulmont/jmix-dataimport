@@ -23,11 +23,13 @@ import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
 import io.jmix.dataimport.extractor.entity.EntityExtractor;
-import io.jmix.dataimport.model.configuration.ImportConfiguration;
-import io.jmix.dataimport.model.configuration.mapping.PropertyMapping;
-import io.jmix.dataimport.property.binding.impl.SimplePropertyValueProvider;
-import io.jmix.dataimport.property.association.CreatedAssociation;
-import io.jmix.dataimport.property.binding.PropertyBindingUtils;
+import io.jmix.dataimport.configuration.ImportConfiguration;
+import io.jmix.dataimport.configuration.mapping.PropertyMapping;
+import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
+import io.jmix.dataimport.property.populator.impl.SimplePropertyValueProvider;
+import io.jmix.dataimport.property.populator.impl.CreatedReference;
+import io.jmix.dataimport.property.populator.PropertyMappingUtils;
+import io.jmix.dataimport.property.populator.EntityInfo;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,31 +42,31 @@ public class EntityExtractorImpl implements EntityExtractor {
     @Autowired
     protected Metadata metadata;
     @Autowired
-    protected EntityPopulator entityPopulator;
+    protected EntityPropertiesPopulator entityPropertiesPopulator;
     @Autowired
     protected SimplePropertyValueProvider simplePropertyValueProvider;
     @Autowired
-    protected PropertyBindingUtils propertyBindingUtils;
+    protected PropertyMappingUtils propertyMappingUtils;
     @Autowired
     protected DuplicateEntityManager duplicateEntityManager;
 
     @Override
-    public EntityExtractionResult extract(ImportConfiguration importConfiguration, ImportedDataItem dataItem) {
-        Object entity = metadata.create(importConfiguration.getEntityMetaClass());
-        EntityInfo entityInfo = entityPopulator.populateProperties(entity, importConfiguration, dataItem);
-        return new EntityExtractionResult(entityInfo.getEntity(), dataItem);
+    public Object extract(ImportConfiguration importConfiguration, ImportedDataItem dataItem) {
+        Object entity = metadata.create(importConfiguration.getEntityClass());
+        EntityInfo entityInfo = entityPropertiesPopulator.populateProperties(entity, importConfiguration, dataItem);
+        return entityInfo.getEntity();
     }
 
     @Override
     public List<EntityExtractionResult> extract(ImportConfiguration importConfiguration, ImportedData importedData) {
         List<EntityExtractionResult> results = new ArrayList<>();
-        Map<PropertyMapping, List<Object>> createdAssociations = new HashMap<>();
+        Map<PropertyMapping, List<Object>> createdReferences = new HashMap<>();
 
         importedData.getItems().forEach(importedDataItem -> {
             EntityExtractionResult alreadyExtractedEntity = getExistingEntity(importedDataItem, importConfiguration, results);
-            Object entityToPopulate = alreadyExtractedEntity == null ? metadata.create(importConfiguration.getEntityMetaClass()) : alreadyExtractedEntity.getEntity();
+            Object entityToPopulate = alreadyExtractedEntity == null ? metadata.create(importConfiguration.getEntityClass()) : alreadyExtractedEntity.getEntity();
 
-            EntityInfo entityInfo = entityPopulator.populateProperties(entityToPopulate, importConfiguration, importedDataItem, createdAssociations);
+            EntityInfo entityInfo = entityPropertiesPopulator.populateProperties(entityToPopulate, importConfiguration, importedDataItem, createdReferences);
 
             if (alreadyExtractedEntity == null) {
                 results.add(new EntityExtractionResult(entityToPopulate, importedDataItem));
@@ -72,23 +74,23 @@ public class EntityExtractorImpl implements EntityExtractor {
                 alreadyExtractedEntity.setImportedDataItem(importedDataItem);
             }
 
-            fillCreatedAssociations(entityInfo, createdAssociations);
+            fillCreatedReferences(entityInfo, createdReferences);
         });
 
         return results;
     }
 
-    public void fillCreatedAssociations(EntityInfo entityInfo, Map<PropertyMapping, List<Object>> createdAssociationsByMapping) {
-        List<CreatedAssociation> createdAssociations = entityInfo.getCreatedAssociations();
-        if (CollectionUtils.isNotEmpty(createdAssociations)) {
-            createdAssociations.forEach(createdAssociation -> {
-                PropertyMapping propertyMapping = createdAssociation.getPropertyMapping();
-                Object createdObject = createdAssociation.getCreatedObject();
-                List<Object> createdObjects = createdAssociationsByMapping.getOrDefault(propertyMapping, new ArrayList<>());
+    public void fillCreatedReferences(EntityInfo entityInfo, Map<PropertyMapping, List<Object>> createdReferencesByMapping) {
+        List<CreatedReference> createdReferences = entityInfo.getCreatedReferences();
+        if (CollectionUtils.isNotEmpty(createdReferences)) {
+            createdReferences.forEach(createdReference -> {
+                PropertyMapping propertyMapping = createdReference.getPropertyMapping();
+                Object createdObject = createdReference.getCreatedObject();
+                List<Object> createdObjects = createdReferencesByMapping.getOrDefault(propertyMapping, new ArrayList<>());
                 if (!(createdObject instanceof Collection) && !createdObjects.contains(createdObject)) {
                     createdObjects.add(createdObject);
                 }
-                createdAssociationsByMapping.put(propertyMapping, createdObjects);
+                createdReferencesByMapping.put(propertyMapping, createdObjects);
             });
         }
     }
@@ -96,7 +98,7 @@ public class EntityExtractorImpl implements EntityExtractor {
     @Nullable
     protected EntityExtractionResult getExistingEntity(ImportedDataItem dataItem, ImportConfiguration importConfiguration, List<EntityExtractionResult> extractedEntities) {
         if (!extractedEntities.isEmpty()) {
-            Map<String, Object> propertyValues = propertyBindingUtils.getPropertyValues(importConfiguration, dataItem);
+            Map<String, Object> propertyValues = propertyMappingUtils.getPropertyValues(importConfiguration, dataItem);
 
             return extractedEntities.stream()
                     .filter(extractionResult -> !findNotEqualValue(propertyValues, extractionResult.getEntity()))

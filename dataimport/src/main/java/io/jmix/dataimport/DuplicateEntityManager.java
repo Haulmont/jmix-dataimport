@@ -17,7 +17,7 @@
 package io.jmix.dataimport;
 
 import io.jmix.core.FetchPlan;
-import io.jmix.dataimport.model.configuration.UniqueEntityConfiguration;
+import io.jmix.dataimport.configuration.UniqueEntityConfiguration;
 
 import javax.annotation.Nullable;
 import java.util.Collection;

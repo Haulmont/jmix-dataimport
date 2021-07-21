@@ -37,11 +37,10 @@ public class PaymentDetails {
     private String paymentType;
 
     @Column(name = "DATE_")
-    @Temporal(TemporalType.DATE)
     private Date date;
 
     @JoinColumn(name = "BONUS_CARD_ID")
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     private BonusCard bonusCard;
 
     @Column(name = "BONUS_AMOUNT", precision = 19, scale = 2)

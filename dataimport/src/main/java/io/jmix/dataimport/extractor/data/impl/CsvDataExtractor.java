@@ -18,11 +18,10 @@ package io.jmix.dataimport.extractor.data.impl;
 
 import com.opencsv.CSVReader;
 import io.jmix.dataimport.exception.ImportException;
-import io.jmix.dataimport.extractor.data.DataExtractor;
+import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
 import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
-import io.jmix.dataimport.model.configuration.ImportConfiguration;
-import io.jmix.dataimport.model.result.ImportErrorType;
+import io.jmix.dataimport.configuration.ImportConfiguration;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 
@@ -31,20 +30,15 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component("datimp_CsvDataExtractor")
-public class CsvDataExtractor implements DataExtractor {
-    @Override
-    public ImportedData extract(String content) {
-        CSVReader csvReader = new CSVReader(new StringReader(content));
-        return getImportedData(csvReader);
-    }
+public class CsvDataExtractor implements ImportedDataExtractor {
 
     @Override
     public ImportedData extract(InputStream inputStream, ImportConfiguration importConfiguration) {
         CSVReader csvReader;
         try {
-            csvReader = new CSVReader(new InputStreamReader(inputStream, importConfiguration.getFileCharset()));
+            csvReader = new CSVReader(new InputStreamReader(inputStream, importConfiguration.getInputDataCharset()));
         } catch (UnsupportedEncodingException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "Unable to read lines from CSV: " + e.getMessage());
+            throw new ImportException(e, "Unable to read lines from CSV: " + e.getMessage());
         }
         return getImportedData(csvReader);
     }
@@ -53,9 +47,9 @@ public class CsvDataExtractor implements DataExtractor {
     public ImportedData extract(byte[] inputData, ImportConfiguration importConfiguration) {
         CSVReader csvReader;
         try {
-            csvReader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(inputData), importConfiguration.getFileCharset()));
+            csvReader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(inputData), importConfiguration.getInputDataCharset()));
         } catch (UnsupportedEncodingException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "Unable to read lines from CSV: " + e.getMessage());
+            throw new ImportException(e, "Unable to read lines from CSV: " + e.getMessage());
         }
         return getImportedData(csvReader);
     }
@@ -65,12 +59,12 @@ public class CsvDataExtractor implements DataExtractor {
         try {
             strings = csvReader.readAll();
         } catch (IOException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "Unable to read lines from CSV: " + e.getMessage());
+            throw new ImportException(e, "Unable to read lines from CSV: " + e.getMessage());
         }
         ImportedData importedData = new ImportedData();
         if (CollectionUtils.isNotEmpty(strings)) {
             List<String> columnNames = Arrays.asList(strings.get(0));
-            importedData.setFieldNames(columnNames);
+            importedData.setDataFieldNames(columnNames);
             for (int i = 1; i < strings.size(); i++) {
                 ImportedDataItem importedDataItem = new ImportedDataItem();
                 importedDataItem.setItemIndex(i);

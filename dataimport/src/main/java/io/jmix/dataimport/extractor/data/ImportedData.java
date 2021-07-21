@@ -16,15 +16,13 @@
 
 package io.jmix.dataimport.extractor.data;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 
 public class ImportedData {
     protected List<ImportedDataItem> items = new ArrayList<>();
-    protected List<String> fieldNames = new ArrayList<>(); //name to map a field from file to entity property
+    protected List<String> dataFieldNames = new ArrayList<>(); //names to map the fields from file to entity properties
 
     public List<ImportedDataItem> getItems() {
         return items;
@@ -34,28 +32,19 @@ public class ImportedData {
         this.items = items;
     }
 
-    public List<String> getFieldNames() {
-        return fieldNames;
+    public List<String> getDataFieldNames() {
+        return dataFieldNames;
     }
 
-    public void setFieldNames(List<String> fieldNames) {
-        this.fieldNames = fieldNames;
+    public void setDataFieldNames(List<String> dataFieldNames) {
+        this.dataFieldNames = dataFieldNames;
     }
-
 
     public void addItem(ImportedDataItem item) {
         this.items.add(item);
     }
 
-    public void addFieldName(String fieldName) {
-        this.fieldNames.add(fieldName);
-    }
-
-    @Nullable
-    public ImportedDataItem getDataItem(int itemIndex) {
-        return Objects.requireNonNull(items.stream()
-                .filter(dataItem -> dataItem.getItemIndex() == itemIndex)
-                .findFirst()
-                .orElse(null));
+    public void addDataFieldName(String dataFieldName) {
+        this.dataFieldNames.add(dataFieldName);
     }
 }

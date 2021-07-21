@@ -16,30 +16,29 @@
 
 package io.jmix.dataimport.exception;
 
+import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
 
 public class ImportUniqueAbortException extends RuntimeException {
     private Object existingEntity;
-    private EntityExtractionResult entityExtractionResult;
+    private Object createdEntity;
+    private ImportedDataItem importedDataItem;
 
     public ImportUniqueAbortException(Object existingEntity, EntityExtractionResult entityExtractionResult) {
         this.existingEntity = existingEntity;
-        this.entityExtractionResult = entityExtractionResult;
+        this.createdEntity = entityExtractionResult.getEntity();
+        this.importedDataItem = entityExtractionResult.getImportedDataItem();
     }
 
     public Object getExistingEntity() {
         return existingEntity;
     }
 
-    public void setExistingEntity(Object existingEntity) {
-        this.existingEntity = existingEntity;
+    public Object getCreatedEntity() {
+        return createdEntity;
     }
 
-    public EntityExtractionResult getEntityExtractionResult() {
-        return entityExtractionResult;
-    }
-
-    public void setEntityExtractionResult(EntityExtractionResult entityExtractionResult) {
-        this.entityExtractionResult = entityExtractionResult;
+    public ImportedDataItem getImportedDataItem() {
+        return importedDataItem;
     }
 }

@@ -23,7 +23,7 @@ import io.jmix.core.entity.EntityValues;
 import io.jmix.core.querycondition.LogicalCondition;
 import io.jmix.core.querycondition.PropertyCondition;
 import io.jmix.dataimport.DuplicateEntityManager;
-import io.jmix.dataimport.model.configuration.UniqueEntityConfiguration;
+import io.jmix.dataimport.configuration.UniqueEntityConfiguration;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,7 +42,7 @@ public class DuplicateEntityManagerImpl implements DuplicateEntityManager {
     @Override
     public Object load(Object entity, UniqueEntityConfiguration configuration, FetchPlan fetchPlan) {
         LogicalCondition condition = LogicalCondition.and();
-        configuration.getProperties().forEach(propertyName -> {
+        configuration.getEntityPropertyNames().forEach(propertyName -> {
             Object valueEx = EntityValues.getValueEx(entity, propertyName);
             if (valueEx != null) {
                 condition.add(PropertyCondition.equal(propertyName, valueEx));
@@ -54,7 +54,7 @@ public class DuplicateEntityManagerImpl implements DuplicateEntityManager {
     }
 
     @Nullable
-    protected Object loadByCondition(Class entityClass, FetchPlan fetchPlan, LogicalCondition condition) {
+    protected Object loadByCondition(Class entityClass, @Nullable FetchPlan fetchPlan, LogicalCondition condition) {
         if (CollectionUtils.isNotEmpty(condition.getConditions())) {
             return dataManager.load(entityClass)
                     .condition(condition)
@@ -67,7 +67,7 @@ public class DuplicateEntityManagerImpl implements DuplicateEntityManager {
 
     @Override
     public Object find(Collection<Object> existingEntities, Map<String, Object> propertyValues) {
-        if (CollectionUtils.isNotEmpty(existingEntities)) {
+        if (!propertyValues.isEmpty()) {
             return existingEntities.stream()
                     .filter(entity -> !findNotEqualValue(propertyValues, entity))
                     .findFirst().orElse(null);
@@ -79,7 +79,7 @@ public class DuplicateEntityManagerImpl implements DuplicateEntityManager {
         return propertyValues.entrySet().stream().anyMatch(entry -> {
             String propertyName = entry.getKey();
             Object propertyValue = entry.getValue();
-            Object propertyValueInEntity = EntityValues.getValue(entity, propertyName);
+            Object propertyValueInEntity = EntityValues.getValueEx(entity, propertyName);
             return !EntityValues.propertyValueEquals(propertyValue, propertyValueInEntity);
         });
     }

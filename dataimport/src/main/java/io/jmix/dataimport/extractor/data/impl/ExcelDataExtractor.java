@@ -17,14 +17,11 @@
 package io.jmix.dataimport.extractor.data.impl;
 
 import io.jmix.dataimport.exception.ImportException;
-import io.jmix.dataimport.extractor.data.DataExtractor;
+import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
 import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
-import io.jmix.dataimport.model.configuration.ImportConfiguration;
-import io.jmix.dataimport.model.result.ImportErrorType;
+import io.jmix.dataimport.configuration.ImportConfiguration;
 import org.apache.poi.ss.usermodel.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -34,11 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 
 @Component("datimp_ExcelDataExtractor")
-public class ExcelDataExtractor implements DataExtractor {
-    @Override
-    public ImportedData extract(String content) {
-        throw new UnsupportedOperationException("Unable to parse Excel file as string");
-    }
+public class ExcelDataExtractor implements ImportedDataExtractor {
 
     @Override
     public ImportedData extract(InputStream inputStream, ImportConfiguration importConfiguration) {
@@ -46,7 +39,7 @@ public class ExcelDataExtractor implements DataExtractor {
         try {
             workbook = WorkbookFactory.create(inputStream);
         } catch (IOException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "I/O error occurs during Excel data reading:" + e.getMessage());
+            throw new ImportException(e, "I/O error occurs during Excel data reading:" + e.getMessage());
         }
         return getImportedData(workbook);
     }
@@ -57,7 +50,7 @@ public class ExcelDataExtractor implements DataExtractor {
         try {
             workbook = WorkbookFactory.create(new ByteArrayInputStream(inputData));
         } catch (IOException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "I/O error occurs during Excel data reading:" + e.getMessage());
+            throw new ImportException(e, "I/O error occurs during Excel data reading:" + e.getMessage());
         }
         return getImportedData(workbook);
     }
@@ -72,20 +65,19 @@ public class ExcelDataExtractor implements DataExtractor {
         while (iterator.hasNext()) {
             Cell cell = (Cell) iterator.next();
             String columnName = cell.getStringCellValue();
-            importedData.addFieldName(columnName);
+            importedData.addDataFieldName(columnName);
         }
-        List<String> columnNames = importedData.getFieldNames();
+        List<String> columnNames = importedData.getDataFieldNames();
 
         DataFormatter dataFormatter = new DataFormatter();
         while (rowIterator.hasNext()) {
             Row row = rowIterator.next();
-            Iterator cellIterator = row.cellIterator();
             ImportedDataItem dataItem = new ImportedDataItem();
             dataItem.setItemIndex(row.getRowNum());
-            while (cellIterator.hasNext()) {
-                Cell cell = (Cell) cellIterator.next();
+            for (int i = 0; i < columnNames.size(); i++) {
+                Cell cell = row.getCell(i);
                 String value = dataFormatter.formatCellValue(cell);
-                dataItem.addRawValue(columnNames.get(cell.getColumnIndex()), value);
+                dataItem.addRawValue(columnNames.get(i), value);
             }
             importedData.addItem(dataItem);
         }

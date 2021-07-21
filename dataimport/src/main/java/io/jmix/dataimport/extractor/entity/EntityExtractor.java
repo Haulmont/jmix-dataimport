@@ -18,7 +18,7 @@ package io.jmix.dataimport.extractor.entity;
 
 import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
-import io.jmix.dataimport.model.configuration.ImportConfiguration;
+import io.jmix.dataimport.configuration.ImportConfiguration;
 
 import java.util.List;
 
@@ -32,9 +32,9 @@ public interface EntityExtractor {
      *
      * @param importConfiguration import configuration
      * @param dataItem source of raw values for the entity
-     * @return result with created entity filled by property values and source data item
+     * @return created entity populated by property values
      */
-    EntityExtractionResult extract(ImportConfiguration importConfiguration, ImportedDataItem dataItem);
+    Object extract(ImportConfiguration importConfiguration, ImportedDataItem dataItem);
 
     /**
      * Each {@link ImportedDataItem} in specified imported data is processed. For each data item it is checked whether

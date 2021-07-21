@@ -21,36 +21,22 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jmix.dataimport.exception.ImportException;
 import io.jmix.dataimport.extractor.data.*;
-import io.jmix.dataimport.model.configuration.ImportConfiguration;
-import io.jmix.dataimport.model.result.ImportErrorType;
+import io.jmix.dataimport.configuration.ImportConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component("datimp_JsonDataExtractor")
-public class JsonDataExtractor implements DataExtractor {
-    @Override
-    public ImportedData extract(String content) {
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            JsonNode rootNode = mapper.readTree(content);
-            return getImportedData(rootNode);
-        } catch (JsonProcessingException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "Error while parsing JSON: " + e.getMessage());
-        }
-    }
+public class JsonDataExtractor implements ImportedDataExtractor {
 
     protected ImportedData getImportedData(JsonNode rootNode) {
         ImportedData importedData = new ImportedData();
         if (rootNode.isArray()) {
             Iterator<JsonNode> iterator = rootNode.elements();
             int itemIndex = 1;
-            List<String> fieldNames = new ArrayList<>();
+            List<String> dataFieldNames = new ArrayList<>();
 
             while (iterator.hasNext()) {
                 JsonNode entityJsonNode = iterator.next();
@@ -58,19 +44,19 @@ public class JsonDataExtractor implements DataExtractor {
                 importedData.addItem(importedDataItem);
                 itemIndex++;
 
-                Iterator<String> fieldNamesIterator = entityJsonNode.fieldNames();
-                while (fieldNamesIterator.hasNext()) {
-                    String fieldName = fieldNamesIterator.next();
-                    if (!fieldNames.contains(fieldName)) {
-                        fieldNames.add(fieldName);
+                Iterator<String> dataFieldNamesIterator = entityJsonNode.fieldNames();
+                while (dataFieldNamesIterator.hasNext()) {
+                    String dataFieldName = dataFieldNamesIterator.next();
+                    if (!dataFieldNames.contains(dataFieldName)) {
+                        dataFieldNames.add(dataFieldName);
                     }
                 }
             }
-            importedData.setFieldNames(fieldNames);
+            importedData.setDataFieldNames(dataFieldNames);
         } else if (rootNode.isObject()) {
-            Iterator<String> fieldNamesIterator = rootNode.fieldNames();
-            while (fieldNamesIterator.hasNext()) {
-                importedData.addFieldName(fieldNamesIterator.next());
+            Iterator<String> dataFieldNamesIterator = rootNode.fieldNames();
+            while (dataFieldNamesIterator.hasNext()) {
+                importedData.addDataFieldName(dataFieldNamesIterator.next());
             }
             ImportedDataItem importedDataItem = createImportedDataItem(rootNode, 1);
             importedData.addItem(importedDataItem);
@@ -92,7 +78,7 @@ public class JsonDataExtractor implements DataExtractor {
         return importedObject;
     }
 
-    protected void readRawValues(JsonNode objectNode, ImportedObject importedObject) {
+    protected void readRawValues(JsonNode objectNode, RawValuesSource rawValuesSource) {
         Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> field = fields.next();
@@ -102,14 +88,18 @@ public class JsonDataExtractor implements DataExtractor {
                 rawValue = null;
             } else {
                 if (childNode.isObject()) {
-                    rawValue = createImportedObject(childNode);
+                    ImportedObject importedObject = createImportedObject(childNode);
+                    importedObject.setDataFieldName(field.getKey());
+                    rawValue = importedObject;
                 } else if (childNode.isArray()) {
-                    rawValue = createImportedObjectList(childNode);
+                    ImportedObjectList importedObjectList = createImportedObjectList(childNode);
+                    importedObjectList.setDataFieldName(field.getKey());
+                    rawValue = importedObjectList;
                 } else {
                     rawValue = childNode.asText();
                 }
             }
-            importedObject.addRawValue(field.getKey(), rawValue);
+            rawValuesSource.addRawValue(field.getKey(), rawValue);
         }
     }
 
@@ -130,9 +120,9 @@ public class JsonDataExtractor implements DataExtractor {
             JsonNode rootNode = mapper.readTree(inputStream);
             return getImportedData(rootNode);
         } catch (JsonProcessingException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "Error while parsing JSON: " + e.getMessage());
+            throw new ImportException(e, "Error while parsing JSON: " + e.getMessage());
         } catch (IOException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "I/O error: " + e.getMessage());
+            throw new ImportException(e, "I/O error: " + e.getMessage());
         }
     }
 
@@ -143,9 +133,9 @@ public class JsonDataExtractor implements DataExtractor {
             JsonNode rootNode = mapper.readTree(inputData);
             return getImportedData(rootNode);
         } catch (JsonProcessingException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "Error while parsing JSON: " + e.getMessage());
+            throw new ImportException(e, "Error while parsing JSON: " + e.getMessage());
         } catch (IOException e) {
-            throw new ImportException(e, ImportErrorType.GENERAL, "I/O error: " + e.getMessage());
+            throw new ImportException(e, "I/O error: " + e.getMessage());
         }
     }
 }
