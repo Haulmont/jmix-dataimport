@@ -99,7 +99,7 @@ public class ImportConfigurationBuilder {
      * @param inputDataCharset charset of input data.
      * @return current instance of builder
      */
-    public ImportConfigurationBuilder withFileCharset(String inputDataCharset) {
+    public ImportConfigurationBuilder withInputDataCharset(String inputDataCharset) {
         this.inputDataCharset = inputDataCharset;
         return this;
     }

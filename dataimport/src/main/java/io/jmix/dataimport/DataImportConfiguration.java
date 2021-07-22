@@ -16,12 +16,13 @@
 
 package io.jmix.dataimport;
 
+import io.jmix.core.CoreConfiguration;
 import io.jmix.core.annotation.JmixModule;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ComponentScan
-@JmixModule
+@JmixModule(dependsOn = CoreConfiguration.class)
 public class DataImportConfiguration {
 }
