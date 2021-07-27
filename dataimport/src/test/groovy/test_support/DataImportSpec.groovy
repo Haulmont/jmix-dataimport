@@ -135,6 +135,12 @@ class DataImportSpec extends Specification {
         paymentDetails.bonusAmount == bonusAmount
     }
 
+    def checkDeliveryDetails(DeliveryDetails deliveryDetails, String date, String fullAddress) {
+        deliveryDetails != null
+        deliveryDetails.deliveryDate == DateUtils.parseDate(date, 'dd/MM/yyyy HH:mm')
+        deliveryDetails.fullAddress == fullAddress
+    }
+
     def checkOrderLine(OrderLine orderLine, String productName, Integer quantity) {
         orderLine != null
         if (productName != null) {

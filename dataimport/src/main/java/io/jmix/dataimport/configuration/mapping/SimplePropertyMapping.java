@@ -19,17 +19,17 @@ package io.jmix.dataimport.configuration.mapping;
 /**
  * Mapping for the simple property of entity.
  * The following types of simple properties are supported:
- * <li>
- *     <ul>String</ul>
- *     <ul>Integer</ul>
- *     <ul>Double</ul>
- *     <ul>Long</ul>
- *     <ul>BigDecimal</ul>
- *     <ul>Boolean</ul>
- *     <ul>Date</ul>
- *     <ul>Local date</ul>
- *     <ul>Enumeration</ul>
- * </li>
+ * <ul>
+ *     <li>String</li>
+ *     <li>Integer</li>
+ *     <li>Double</li>
+ *     <li>Long</li>
+ *     <li>BigDecimal</li>
+ *     <li>Boolean</li>
+ *     <li>Date</li>
+ *     <li>Local date</li>
+ *     <li>Enumeration</li>
+ * </ul>
  */
 public class SimplePropertyMapping implements PropertyMapping {
     protected String entityPropertyName;

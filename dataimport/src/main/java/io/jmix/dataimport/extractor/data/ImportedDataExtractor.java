@@ -26,7 +26,7 @@ import java.io.InputStream;
  */
 public interface ImportedDataExtractor {
 
-    ImportedData extract(InputStream inputStream, ImportConfiguration importConfiguration);
+    ImportedData extract(ImportConfiguration importConfiguration, InputStream inputStream);
 
-    ImportedData extract(byte[] inputData, ImportConfiguration importConfiguration);
+    ImportedData extract(ImportConfiguration importConfiguration, byte[] inputData);
 }

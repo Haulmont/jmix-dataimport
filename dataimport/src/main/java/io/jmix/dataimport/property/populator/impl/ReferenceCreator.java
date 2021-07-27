@@ -22,15 +22,15 @@ import io.jmix.core.metamodel.model.MetaClass;
 import io.jmix.core.metamodel.model.MetaProperty;
 import io.jmix.core.metamodel.model.Range;
 import io.jmix.dataimport.DuplicateEntityManager;
-import io.jmix.dataimport.extractor.data.RawValuesSource;
+import io.jmix.dataimport.configuration.mapping.PropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
-import io.jmix.dataimport.configuration.mapping.PropertyMapping;
-import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
 import io.jmix.dataimport.extractor.data.ImportedObject;
 import io.jmix.dataimport.extractor.data.ImportedObjectList;
-import io.jmix.dataimport.property.populator.PropertyMappingUtils;
+import io.jmix.dataimport.extractor.data.RawValuesSource;
+import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
 import io.jmix.dataimport.property.populator.PropertyMappingContext;
+import io.jmix.dataimport.property.populator.PropertyMappingUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +69,11 @@ public class ReferenceCreator {
             return populateReferenceEntity(context, null, null);
         }
         return null;
+    }
+
+    @Nullable
+    public Object createEmbeddedEntity(PropertyMappingContext context) {
+        return populateReferenceEntity(context, null, null);
     }
 
     @Nullable

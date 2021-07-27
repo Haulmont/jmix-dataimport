@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.jmix.dataimport;
+package io.jmix.dataimport.impl;
 
 import io.jmix.core.*;
 import io.jmix.core.entity.EntityValues;
@@ -22,23 +22,24 @@ import io.jmix.core.metamodel.model.MetaClass;
 import io.jmix.core.metamodel.model.MetaProperty;
 import io.jmix.core.metamodel.model.Range;
 import io.jmix.core.validation.EntityValidationException;
-import io.jmix.dataimport.exception.ImportUniqueAbortException;
-import io.jmix.dataimport.extractor.data.ImportedData;
-import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
-import io.jmix.dataimport.extractor.entity.EntityExtractor;
+import io.jmix.dataimport.DuplicateEntityManager;
 import io.jmix.dataimport.configuration.DuplicateEntityPolicy;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.configuration.ImportTransactionStrategy;
 import io.jmix.dataimport.configuration.UniqueEntityConfiguration;
-import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy;
+import io.jmix.dataimport.configuration.mapping.PropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
-import io.jmix.dataimport.configuration.mapping.PropertyMapping;
+import io.jmix.dataimport.configuration.mapping.SimplePropertyMapping;
+import io.jmix.dataimport.exception.ImportUniqueAbortException;
+import io.jmix.dataimport.extractor.data.ImportedData;
+import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
+import io.jmix.dataimport.extractor.entity.EntityExtractor;
+import io.jmix.dataimport.property.populator.EntityInfo;
+import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
 import io.jmix.dataimport.result.EntityImportError;
 import io.jmix.dataimport.result.EntityImportErrorType;
 import io.jmix.dataimport.result.ImportResult;
-import io.jmix.dataimport.property.populator.EntityInfo;
-import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +48,11 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
 import javax.persistence.PersistenceException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component("datimp_DataImportExecutor")
@@ -89,9 +90,10 @@ public class DataImportExecutor {
     }
 
     public ImportResult importData() {
-        validateImportConfiguration();
+        if (importConfiguration == null) {
+            throw new IllegalStateException("Import configuration is not set to execute data import");
+        }
 
-        importResult.setConfigurationCode(importConfiguration.getCode());
         if (importConfiguration.getTransactionStrategy() == ImportTransactionStrategy.SINGLE_TRANSACTION) {
             importInOneTransaction();
         } else {
@@ -112,7 +114,6 @@ public class DataImportExecutor {
             }
 
             if (extractionResults != null) {
-                importResult.setNumOfProcessedEntities(extractionResults.size());
                 List<Object> entitiesToImport = extractionResults.stream()
                         .filter(this::checkExtractedEntity)
                         .map(EntityExtractionResult::getEntity)
@@ -141,7 +142,7 @@ public class DataImportExecutor {
                     importResult.addFailedEntity(new EntityImportError()
                             .setImportedDataItem(dataItem)
                             .setErrorType(EntityImportErrorType.DATA_BINDING)
-                            .setErrorMessage("Error during entity extraction: " + e.getMessage()));
+                            .setErrorMessage(e.getMessage()));
                 }
                 if (extractedEntity != null) {
                     EntityExtractionResult extractionResult = new EntityExtractionResult(extractedEntity, dataItem);
@@ -151,13 +152,13 @@ public class DataImportExecutor {
                     }
                 }
             });
-            importResult.setNumOfProcessedEntities(importedData.getItems().size());
         } catch (ImportUniqueAbortException e) {
-            log.error("Import failed: ", e);
+            String errorMessage = String.format("Unique violation occurred with Unique Policy ABORT for data row: %s. Found entity: %s",
+                    e.getImportedDataItem(),
+                    e.getExistingEntity());
+            log.error(errorMessage, e);
             importResult.setSuccess(false);
-            importResult.setErrorMessage(String.format("Unique violation occurred with Unique Policy ABORT for entity: %s with data row: %s. Found entity: %s",
-                    e.getCreatedEntity(), e.getImportedDataItem(),
-                    e.getExistingEntity()));
+            importResult.setErrorMessage(errorMessage);
         }
     }
 
@@ -237,7 +238,6 @@ public class DataImportExecutor {
     protected void resetImportResult(Exception e, String errorMessage) {
         log.error(errorMessage, e);
         importResult.setSuccess(false)
-                .setNumOfProcessedEntities(0)
                 .setErrorMessage(errorMessage);
     }
 
@@ -300,43 +300,57 @@ public class DataImportExecutor {
     protected EntityImportPlanBuilder createEntityImportPlanBuilder(MetaClass ownerEntityMetaClass,
                                                                     List<PropertyMapping> propertyMappings,
                                                                     Object ownerEntity) {
-        EntityImportPlanBuilder builder = entityImportPlans.builder(ownerEntityMetaClass.getJavaClass());
-        propertyMappings.forEach(propertyMapping -> {
-            String propertyName = propertyMapping.getEntityPropertyName();
-            MetaProperty property = ownerEntityMetaClass.getProperty(propertyName);
-            Object propertyValue = EntityValues.getValue(ownerEntity, propertyName);
-            if (!property.getRange().isClass() || propertyValue == null) {
-                builder.addProperties(propertyName);
-            } else {
-                EntityImportPlanBuilder propertyImportPlanBuilder = null;
-                if (propertyValue instanceof Collection) {
-                    propertyImportPlanBuilder = createEntityImportPlanForCollection(property, (ReferenceMultiFieldPropertyMapping) propertyMapping);
-                } else if (entityStates.isNew(propertyValue)) {
-                    if (propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
-                        propertyImportPlanBuilder = createEntityImportPlanBuilder(property.getRange().asClass(),
-                                ((ReferenceMultiFieldPropertyMapping) propertyMapping).getReferencePropertyMappings(), propertyValue);
-                    } else if (propertyMapping instanceof ReferencePropertyMapping) {
-                        propertyImportPlanBuilder = entityImportPlans.builder(property.getRange().asClass().getJavaClass())
-                                .addProperties(((ReferencePropertyMapping) propertyMapping).getLookupPropertyName());
+        EntityImportPlanBuilder builder = entityImportPlans.builder(ownerEntityMetaClass.getJavaClass())
+                .addLocalProperties();
+        propertyMappings.stream()
+                .filter(propertyMapping -> !(propertyMapping instanceof SimplePropertyMapping))
+                .forEach(propertyMapping -> {
+                    String propertyName = propertyMapping.getEntityPropertyName();
+                    MetaProperty property = ownerEntityMetaClass.getProperty(propertyName);
+                    Object propertyValue = EntityValues.getValue(ownerEntity, propertyName);
+                    if (!property.getRange().isClass() || propertyValue == null) {
+                        builder.addProperties(propertyName);
+                    } else {
+                        EntityImportPlanBuilder propertyImportPlanBuilder = null;
+                        if (propertyValue instanceof Collection) {
+                            propertyImportPlanBuilder = createEntityImportPlanForCollection(property, (ReferenceMultiFieldPropertyMapping) propertyMapping);
+                        } else if (entityStates.isNew(propertyValue)) {
+                            if (propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
+                                propertyImportPlanBuilder = createEntityImportPlanBuilder(property.getRange().asClass(),
+                                        ((ReferenceMultiFieldPropertyMapping) propertyMapping).getReferencePropertyMappings(), propertyValue);
+                            } else if (propertyMapping instanceof ReferencePropertyMapping) {
+                                propertyImportPlanBuilder = entityImportPlans.builder(property.getRange().asClass().getJavaClass())
+                                        .addProperties(((ReferencePropertyMapping) propertyMapping).getLookupPropertyName());
+                            }
+                        } else if (metadataTools.isEmbedded(property)) {
+                            propertyImportPlanBuilder = entityImportPlans.builder(property.getRange().asClass().getJavaClass())
+                                    .addLocalProperties();
+                        } else {
+                            builder.addProperties(propertyName);
+                        }
+                        if (propertyImportPlanBuilder != null) {
+                            addReferencePropertyToImportPlan(builder, propertyName, property, propertyImportPlanBuilder.build());
+                        }
                     }
-                } else {
-                    builder.addProperties(propertyName);
-                }
-                if (propertyImportPlanBuilder != null) {
-                    addReferencePropertyToImportPlan(builder, propertyName, property, propertyImportPlanBuilder.build());
-                }
-            }
-        });
+                });
         return builder;
     }
 
     protected EntityImportPlanBuilder createEntityImportPlanForCollection(MetaProperty property, ReferenceMultiFieldPropertyMapping referenceMapping) {
-        EntityImportPlanBuilder collectionImportPlan = entityImportPlans.builder(property.getRange().asClass().getJavaClass());
-        referenceMapping.getReferencePropertyMappings().forEach(propertyMapping -> collectionImportPlan.addProperties(propertyMapping.getEntityPropertyName()));
+        EntityImportPlanBuilder collectionImportPlan = entityImportPlans.builder(property.getRange().asClass().getJavaClass())
+                .addLocalProperties();
+        referenceMapping.getReferencePropertyMappings()
+                .stream().filter(propertyMapping -> !(propertyMapping instanceof SimplePropertyMapping))
+                .forEach(propertyMapping -> collectionImportPlan.addProperties(propertyMapping.getEntityPropertyName()));
         return collectionImportPlan;
     }
 
     protected void addReferencePropertyToImportPlan(EntityImportPlanBuilder ownerBuilder, String propertyName, MetaProperty property, EntityImportPlan propertyImportPlan) {
+        if (metadataTools.isEmbedded(property)) {
+            ownerBuilder.addEmbeddedProperty(propertyName, propertyImportPlan);
+            return;
+        }
+
         Range.Cardinality cardinality = property.getRange().getCardinality();
         switch (cardinality) {
             case ONE_TO_ONE:
@@ -353,28 +367,5 @@ public class DataImportExecutor {
         }
     }
 
-    protected void validateImportConfiguration() {
-        if (importConfiguration == null) {
-            throw new IllegalStateException("Import configuration is not set to execute data import");
-        }
 
-        validatePropertyMappings(importConfiguration.getPropertyMappings());
-    }
-
-    protected void validatePropertyMappings(List<PropertyMapping> propertyMappings) {
-        propertyMappings.forEach(propertyMapping -> {
-            if (propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
-                ReferenceMultiFieldPropertyMapping multiFieldPropertyMapping = (ReferenceMultiFieldPropertyMapping) propertyMapping;
-                ReferenceImportPolicy referenceImportPolicy = multiFieldPropertyMapping.getReferenceImportPolicy();
-                if (referenceImportPolicy == null) {
-                    throw new IllegalStateException(String.format("Reference import policy is not set for property [%s]", multiFieldPropertyMapping.getEntityPropertyName()));
-                }
-                if (referenceImportPolicy != ReferenceImportPolicy.CREATE && CollectionUtils.isEmpty(multiFieldPropertyMapping.getLookupPropertyNames())) {
-                    throw new IllegalStateException(String.format("Lookup properties are not set for property [%s]", multiFieldPropertyMapping.getEntityPropertyName()));
-                }
-
-                validatePropertyMappings(multiFieldPropertyMapping.getReferencePropertyMappings());
-            }
-        });
-    }
 }

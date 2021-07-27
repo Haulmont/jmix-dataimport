@@ -21,9 +21,6 @@ import java.util.List;
 
 public class ImportResult {
     protected boolean success = true;
-    protected String configurationCode;
-
-    protected int numOfProcessedEntities;
 
     protected List<Object> importedEntityIds = new ArrayList<>();
     protected List<EntityImportError> failedEntities = new ArrayList<>();
@@ -52,20 +49,6 @@ public class ImportResult {
         return failedEntities;
     }
 
-    public ImportResult setFailedEntities(List<EntityImportError> failedEntities) {
-        this.failedEntities = failedEntities;
-        return this;
-    }
-
-    public int getNumOfProcessedEntities() {
-        return numOfProcessedEntities;
-    }
-
-    public ImportResult setNumOfProcessedEntities(int numOfProcessedEntities) {
-        this.numOfProcessedEntities = numOfProcessedEntities;
-        return this;
-    }
-
     public ImportResult addImportedEntityId(Object id) {
         this.importedEntityIds.add(id);
         return this;
@@ -83,13 +66,5 @@ public class ImportResult {
     public ImportResult setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
         return this;
-    }
-
-    public String getConfigurationCode() {
-        return configurationCode;
-    }
-
-    public void setConfigurationCode(String configurationCode) {
-        this.configurationCode = configurationCode;
     }
 }

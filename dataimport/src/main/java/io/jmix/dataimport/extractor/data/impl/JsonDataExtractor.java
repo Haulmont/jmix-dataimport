@@ -19,17 +19,46 @@ package io.jmix.dataimport.extractor.data.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.exception.ImportException;
 import io.jmix.dataimport.extractor.data.*;
-import io.jmix.dataimport.configuration.ImportConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 @Component("datimp_JsonDataExtractor")
 public class JsonDataExtractor implements ImportedDataExtractor {
+
+    @Override
+    public ImportedData extract(ImportConfiguration importConfiguration, InputStream inputStream) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode rootNode = mapper.readTree(inputStream);
+            return getImportedData(rootNode);
+        } catch (JsonProcessingException e) {
+            throw new ImportException(e, "Error while parsing JSON: " + e.getMessage());
+        } catch (IOException e) {
+            throw new ImportException(e, "I/O error: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ImportedData extract(ImportConfiguration importConfiguration, byte[] inputData) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode rootNode = mapper.readTree(inputData);
+            return getImportedData(rootNode);
+        } catch (JsonProcessingException e) {
+            throw new ImportException(e, "Error while parsing JSON: " + e.getMessage());
+        } catch (IOException e) {
+            throw new ImportException(e, "I/O error: " + e.getMessage());
+        }
+    }
 
     protected ImportedData getImportedData(JsonNode rootNode) {
         ImportedData importedData = new ImportedData();
@@ -113,29 +142,5 @@ public class JsonDataExtractor implements ImportedDataExtractor {
         return listObject;
     }
 
-    @Override
-    public ImportedData extract(InputStream inputStream, ImportConfiguration importConfiguration) {
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            JsonNode rootNode = mapper.readTree(inputStream);
-            return getImportedData(rootNode);
-        } catch (JsonProcessingException e) {
-            throw new ImportException(e, "Error while parsing JSON: " + e.getMessage());
-        } catch (IOException e) {
-            throw new ImportException(e, "I/O error: " + e.getMessage());
-        }
-    }
 
-    @Override
-    public ImportedData extract(byte[] inputData, ImportConfiguration importConfiguration) {
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            JsonNode rootNode = mapper.readTree(inputData);
-            return getImportedData(rootNode);
-        } catch (JsonProcessingException e) {
-            throw new ImportException(e, "Error while parsing JSON: " + e.getMessage());
-        } catch (IOException e) {
-            throw new ImportException(e, "I/O error: " + e.getMessage());
-        }
-    }
 }

@@ -16,10 +16,9 @@
 
 package io.jmix.dataimport.configuration;
 
-import io.jmix.dataimport.InputDataFormat;
 import io.jmix.dataimport.configuration.mapping.*;
 import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
-import io.jmix.dataimport.property.populator.PropertyMappingContext;
+import io.jmix.dataimport.property.populator.CustomMappingContext;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -32,11 +31,9 @@ import java.util.function.Predicate;
  * Builds an instance of {@link ImportConfiguration} using the following parameters:
  * <ol>
  *     <li>Entity class (required): class of entity that will be imported using created import configuration</li>
- *     <li>Configuration code (required)</li>
- *     <li>Configuration name</li>
+ *     <li>Input data format (required): xlsx, csv, json or xml.</li>
  *     <li>Property mappings: list of {@link PropertyMapping}</li>
  *     <li>Transaction strategy: {@link ImportTransactionStrategy}. By default, each entity is imported in the separate transaction.</li>
- *     <li>Input data format: xlsx, csv, json or xml.</li>
  *     <li>Date format</li>
  *     <li>Custom formats of boolean true and false values</li>
  *     <li>Pre-import predicate: a predicate that is executed for each extracted entity before import. If the predicate returns false, the entity won't be imported.
@@ -48,8 +45,6 @@ import java.util.function.Predicate;
  */
 public class ImportConfigurationBuilder {
     private Class entityClass;
-    private String name;
-    private String code;
     private List<PropertyMapping> propertyMappings = new ArrayList<>();
 
     private ImportTransactionStrategy transactionStrategy;
@@ -66,31 +61,9 @@ public class ImportConfigurationBuilder {
 
     private List<UniqueEntityConfiguration> uniqueEntityConfigurations = new ArrayList<>();
 
-    public ImportConfigurationBuilder(Class entityClass, String configurationCode) {
+    protected ImportConfigurationBuilder(Class entityClass, String inputDataFormat) {
         this.entityClass = entityClass;
-        this.code = configurationCode;
-    }
-
-    /**
-     * Creates an instance of {@link ImportConfigurationBuilder} for the specified entity class and import configuration code.
-     *
-     * @param entityClass       entity class
-     * @param configurationCode import configuration code
-     * @return new instance of {@link ImportConfigurationBuilder}
-     */
-    public static ImportConfigurationBuilder of(Class entityClass, String configurationCode) {
-        return new ImportConfigurationBuilder(entityClass, configurationCode);
-    }
-
-    /**
-     * Sets a import configuration name.
-     *
-     * @param name import configuration name
-     * @return current instance of builder
-     */
-    public ImportConfigurationBuilder withName(String name) {
-        this.name = name;
-        return this;
+        this.inputDataFormat = inputDataFormat;
     }
 
     /**
@@ -126,7 +99,7 @@ public class ImportConfigurationBuilder {
      */
     public ImportConfigurationBuilder addCustomPropertyMapping(String entityPropertyName,
                                                                String dataFieldName,
-                                                               Function<PropertyMappingContext, Object> customValueFunction) {
+                                                               Function<CustomMappingContext, Object> customValueFunction) {
         this.propertyMappings.add(new CustomPropertyMapping(entityPropertyName, dataFieldName, customValueFunction));
         return this;
     }
@@ -161,11 +134,10 @@ public class ImportConfigurationBuilder {
                                                                   String lookupPropertyName,
                                                                   String dataFieldName,
                                                                   ReferenceImportPolicy policy) {
-        this.propertyMappings.add(ReferencePropertyMapping.byEntityPropertyName(entityPropertyName)
-                .withDataFieldName(dataFieldName)
-                .withReferenceImportPolicy(policy)
-                .withLookupPropertyName(lookupPropertyName)
-                .build());
+        this.propertyMappings.add(new ReferencePropertyMapping(entityPropertyName)
+                .setDataFieldName(dataFieldName)
+                .setReferenceImportPolicy(policy)
+                .setLookupPropertyName(lookupPropertyName));
         return this;
     }
 
@@ -182,7 +154,6 @@ public class ImportConfigurationBuilder {
      * @return current instance of builder
      *
      * @see ReferenceMultiFieldPropertyMapping.Builder
-     * @see ReferencePropertyMapping.Builder
      */
     public ImportConfigurationBuilder addPropertyMapping(PropertyMapping propertyMapping) {
         this.propertyMappings.add(propertyMapping);
@@ -213,33 +184,17 @@ public class ImportConfigurationBuilder {
         return this;
     }
 
-    /**
-     * Sets a format of input data. For example, xlsx or json.
-     *
-     * @param inputDataFormat format of input data
-     * @return current instance of builder
-     *
-     * @see InputDataFormat
-     */
-
-    public ImportConfigurationBuilder withInputDataFormat(String inputDataFormat) {
-        this.inputDataFormat = inputDataFormat;
-        return this;
-    }
-
     public ImportConfigurationBuilder withPreImportPredicate(Predicate<EntityExtractionResult> preImportPredicate) {
         this.preImportPredicate = preImportPredicate;
         return this;
     }
 
     public ImportConfiguration build() {
-        return new ImportConfiguration(entityClass, this.code)
+        return new ImportConfiguration(entityClass, this.inputDataFormat)
                 .setDateFormat(dateFormat)
                 .setBooleanTrueValue(booleanTrueValue)
                 .setBooleanFalseValue(booleanFalseValue)
-                .setName(this.name)
                 .setTransactionStrategy(this.transactionStrategy)
-                .setInputDataFormat(this.inputDataFormat)
                 .setPropertyMappings(propertyMappings)
                 .setInputDataCharset(this.inputDataCharset)
                 .setPreImportPredicate(this.preImportPredicate)

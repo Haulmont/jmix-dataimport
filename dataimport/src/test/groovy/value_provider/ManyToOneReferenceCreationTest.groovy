@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package entity_populator
+package value_provider
 
 import com.google.common.collect.ImmutableMap
 import io.jmix.core.FetchPlan
 import io.jmix.core.common.util.ParamsMap
+import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
 import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
-import io.jmix.dataimport.configuration.ImportConfigurationBuilder
 import io.jmix.dataimport.extractor.data.ImportedDataItem
 import io.jmix.dataimport.extractor.data.ImportedObject
 import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
@@ -31,21 +32,20 @@ import test_support.entity.Customer
 import test_support.entity.CustomerGrade
 import test_support.entity.Order
 
-class ManyToOneAssociationsCreationTest extends DataImportSpec {
+class ManyToOneReferenceCreationTest extends DataImportSpec {
 
     @Autowired
-    protected EntityPropertiesPopulator entityPopulator
+    protected EntityPropertiesPopulator entityPropertiesPopulator
 
 
     def 'test reference creation using data from imported object'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("customer")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("customer", ReferenceImportPolicy.CREATE_IF_MISSING)
                         .withDataFieldName("customer")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE_IF_MISSING)
-                        .withSimplePropertyMappings(ImmutableMap.of("name", "name",
-                                "email", "email",
-                                "grade", "grade"))
+                        .addSimplePropertyMapping("name", "name")
+                        .addSimplePropertyMapping("email", "email")
+                        .addSimplePropertyMapping("grade", "grade")
                         .lookupByAllSimpleProperties()
                         .build())
                 .withDateFormat("dd/MM/yyyy hh:mm")
@@ -58,16 +58,16 @@ class ManyToOneAssociationsCreationTest extends DataImportSpec {
                 "grade", "Bronze"))
         importedDataItem.addRawValue('customer', customerImportedObject)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 1
+        entityInfo.entity == order
+        entityInfo.createdReferences.size() == 1
 
-        def createdCustomer = entityFillingInfo.createdReferences.get(0).createdObject as Customer
+        def createdCustomer = entityInfo.createdReferences[0].createdObject as Customer
 
         order.customer == createdCustomer
         checkCustomer(createdCustomer, 'John Dow', 'j.dow@mail.com', CustomerGrade.BRONZE)
@@ -75,9 +75,8 @@ class ManyToOneAssociationsCreationTest extends DataImportSpec {
 
     def 'test reference creation using data imported data item'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("customer")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE_IF_MISSING)
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("customer", ReferenceImportPolicy.CREATE_IF_MISSING)
                         .addSimplePropertyMapping("name", "Customer Name")
                         .addSimplePropertyMapping("email", "Customer Email")
                         .addSimplePropertyMapping("grade", "Customer Grade")
@@ -91,45 +90,44 @@ class ManyToOneAssociationsCreationTest extends DataImportSpec {
         importedDataItem.addRawValue('Customer Email', "j.dow@mail.com")
         importedDataItem.addRawValue('Customer Grade', "Bronze")
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 1
+        entityInfo.entity == order
+        entityInfo.createdReferences.size() == 1
 
-        def createdCustomer = entityFillingInfo.createdReferences.get(0).createdObject as Customer
+        def createdCustomer = entityInfo.createdReferences[0].createdObject as Customer
         order.customer == createdCustomer
         checkCustomer(createdCustomer, 'John Dow', 'j.dow@mail.com', CustomerGrade.BRONZE)
     }
 
     def 'test ignore not existing many-to-one reference using data from imported data item'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addReferencePropertyMapping("customer", 'name', "Customer Name", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Customer Name', 'John Dow')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 0
+        entityInfo.entity == order
+        entityInfo.createdReferences.size() == 0
         order.customer == null
     }
 
     def 'test ignore not existing many-to-one reference using data from imported object'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer')
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .withDataFieldName('customer')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .addSimplePropertyMapping('name', 'name')
                         .withLookupPropertyNames('name')
                         .build())
@@ -138,19 +136,19 @@ class ManyToOneAssociationsCreationTest extends DataImportSpec {
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('customer', createImportedObject(ParamsMap.of("name", 'John Dow')))
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 0
+        entityInfo.entity == order
+        entityInfo.createdReferences.size() == 0
         order.customer == null
     }
 
     def 'test load existing reference using data from imported item'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addReferencePropertyMapping("customer", "name", "Customer Name", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
 
@@ -159,22 +157,21 @@ class ManyToOneAssociationsCreationTest extends DataImportSpec {
 
         def customer = loadCustomer('Parker Leighton', FetchPlan.BASE)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 0
+        entityInfo.entity == order
+        entityInfo.createdReferences.size() == 0
         order.customer == customer
     }
 
     def 'test load existing reference from separate imported object'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer')
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .withDataFieldName('customer')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .addSimplePropertyMapping('name', 'name')
                         .lookupByAllSimpleProperties()
                         .build())
@@ -187,13 +184,13 @@ class ManyToOneAssociationsCreationTest extends DataImportSpec {
 
         def customer = loadCustomer('Parker Leighton', FetchPlan.BASE)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 0
+        entityInfo.entity == order
+        entityInfo.createdReferences.size() == 0
         order.customer == customer
     }
 }

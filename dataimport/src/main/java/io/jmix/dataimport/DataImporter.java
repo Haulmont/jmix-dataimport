@@ -23,14 +23,45 @@ import io.jmix.dataimport.result.ImportResult;
 import java.io.InputStream;
 
 /**
- * API to import entities from the input data (XLSX, CSV, JSON, XML) using specified import configuration.
+ * API to import entities from the input data using specified import configuration.
+ * Supported formats of the input data:
+ * <ol>
+ *     <li>XLSX: an Excel file in which one row represents one entity to import</li>
+ *     <li>CSV: a CSV file in which one row represents one entity to import </li>
+ *     <li>JSON: a JSON file that has an object array as a root node in which one object represents one entity to import</li>
+ *     <li>XML: a XML file that has one root tag containing child tags with equal structure. One child tag represents one entity to import.</li>
+ * </ol>
  *
  * @see ImportConfiguration
  */
 public interface DataImporter {
+    /**
+     * Creates the entities using data from the given byte array (XLSX, CSV, JSON, XML) and specified import configuration
+     * and saves these entities to the database.
+     *
+     * @param configuration import configuration
+     * @param content       source (XLSX, CSV, JSON, XML) that contains data for the entities to import
+     * @return object that contains result of import execution
+     */
     ImportResult importData(ImportConfiguration configuration, byte[] content);
 
+    /**
+     * Creates the entities using data from the given input stream (XLSX, CSV, JSON, XML) and specified import configuration
+     * and saves these entities to the database.
+     *
+     * @param configuration import configuration
+     * @param inputStream   source (XLSX, CSV, JSON, XML) that contains data for the entities to import
+     * @return object that contains result of import execution
+     */
     ImportResult importData(ImportConfiguration configuration, InputStream inputStream);
 
+    /**
+     * Creates the entities using data from the given {@link ImportedData} object and specified import configuration
+     * and saves these entities to the database.
+     *
+     * @param configuration import configuration
+     * @param importedData  imported data
+     * @return object that contains result of import execution
+     */
     ImportResult importData(ImportConfiguration configuration, ImportedData importedData);
 }

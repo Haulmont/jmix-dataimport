@@ -17,6 +17,7 @@
 package extractor.data
 
 import io.jmix.core.Resources
+import io.jmix.dataimport.InputDataFormat
 import io.jmix.dataimport.extractor.data.ImportedObject
 import io.jmix.dataimport.extractor.data.ImportedObjectList
 import io.jmix.dataimport.extractor.data.impl.XmlDataExtractor
@@ -37,24 +38,24 @@ class XmlDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/xml/list_of_products.xml")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-xml");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, InputDataFormat.XML);
 
         when: 'imported data extracted'
-        def importedData = xmlDataExtractor.extract(inputStream, importConfiguration)
+        def importedData = xmlDataExtractor.extract(importConfiguration, inputStream)
 
         then:
         importedData.dataFieldNames.size() == 3
         importedData.dataFieldNames == ['name', 'special', 'price']
 
         importedData.items.size() == 2
-        def firstProduct = importedData.items.get(0)
+        def firstProduct = importedData.items[0]
         firstProduct.itemIndex == 1
         firstProduct.rawValues.size() == 3
         firstProduct.getRawValue('name') == 'Outback Power Nano-Carbon Battery 12V'
         firstProduct.getRawValue('special') == 'Yes'
         firstProduct.getRawValue('price') == '6.25'
 
-        def secondProduct = importedData.items.get(1)
+        def secondProduct = importedData.items[1]
         secondProduct.itemIndex == 2
         secondProduct.rawValues.size() == 3
         secondProduct.getRawValue('name') == 'Fullriver Sealed Battery 6V'
@@ -66,17 +67,17 @@ class XmlDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/xml/one_product.xml")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-xml");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, InputDataFormat.XML);
 
         when: 'imported data extracted'
-        def importedData = xmlDataExtractor.extract(inputStream, importConfiguration)
+        def importedData = xmlDataExtractor.extract(importConfiguration, inputStream)
 
         then:
         importedData.dataFieldNames.size() == 3
         importedData.dataFieldNames == ['name', 'special', 'price']
 
         importedData.items.size() == 1
-        def firstProduct = importedData.items.get(0)
+        def firstProduct = importedData.items[0]
         firstProduct.itemIndex == 1
         firstProduct.rawValues.size() == 3
         firstProduct.getRawValue('name') == 'Cotek Battery Charger'
@@ -88,20 +89,20 @@ class XmlDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/xml/customers_with_orders.xml")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-orders");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, InputDataFormat.XML);
 
         when: 'imported data extracted'
-        def importedData = xmlDataExtractor.extract(inputStream, importConfiguration)
+        def importedData = xmlDataExtractor.extract(importConfiguration, inputStream)
 
         then:
         importedData.dataFieldNames == ['name', 'email', 'orders']
 
-        def importedCustomerItem = importedData.items.get(1)
+        def importedCustomerItem = importedData.items[1]
         def emptyOrders = (ImportedObjectList) importedCustomerItem.getRawValue('orders')
         emptyOrders.dataFieldName == 'orders'
         emptyOrders.importedObjects.size() == 1
 
-        def importedOrderObject = emptyOrders.importedObjects.get(0)
+        def importedOrderObject = emptyOrders.importedObjects[0]
         importedOrderObject.dataFieldName == 'order'
         importedOrderObject.getRawValue("number") == '#001'
         importedOrderObject.getRawValue("amount") == '50.5'
@@ -112,25 +113,25 @@ class XmlDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/xml/customer_with_orders.xml")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-orders");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, InputDataFormat.XML);
 
         when: 'imported data extracted'
-        def importedData = xmlDataExtractor.extract(inputStream, importConfiguration)
+        def importedData = xmlDataExtractor.extract(importConfiguration, inputStream)
 
         then:
         importedData.dataFieldNames == ['name', 'email', 'order']
 
-        def importedCustomerItem = importedData.items.get(0)
+        def importedCustomerItem = importedData.items[0]
         def importedOrderList = (ImportedObjectList) importedCustomerItem.getRawValue('order')
         importedOrderList.importedObjects.size() == 2
 
-        def firstImportedOrderObject = importedOrderList.importedObjects.get(0)
+        def firstImportedOrderObject = importedOrderList.importedObjects[0]
         firstImportedOrderObject.dataFieldName == 'order'
         firstImportedOrderObject.getRawValue("number") == '#001'
         firstImportedOrderObject.getRawValue("amount") == '50.5'
         firstImportedOrderObject.getRawValue("date") == '12/02/2021 12:00'
 
-        def secondImportedOrderObject = importedOrderList.importedObjects.get(1)
+        def secondImportedOrderObject = importedOrderList.importedObjects[1]
         secondImportedOrderObject.dataFieldName == 'order'
         secondImportedOrderObject.getRawValue("number") == '#002'
         secondImportedOrderObject.getRawValue("amount") == '25'
@@ -141,15 +142,15 @@ class XmlDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/xml/customers_with_orders.xml")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-orders");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, InputDataFormat.XML);
 
         when: 'imported data extracted'
-        def importedData = xmlDataExtractor.extract(inputStream, importConfiguration)
+        def importedData = xmlDataExtractor.extract(importConfiguration, inputStream)
 
         then:
         importedData.dataFieldNames == ['name', 'email', 'orders']
 
-        def firstCustomer = importedData.items.get(2)
+        def firstCustomer = importedData.items[2]
         firstCustomer.getRawValue('email') == null
         firstCustomer.getRawValue('orders') == null
     }
@@ -158,15 +159,15 @@ class XmlDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/xml/customers_with_addresses.xml")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, "customers-and-addresses");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Customer, InputDataFormat.XML);
 
         when: 'imported data extracted'
-        def importedData = xmlDataExtractor.extract(inputStream, importConfiguration)
+        def importedData = xmlDataExtractor.extract(importConfiguration, inputStream)
 
         then:
         importedData.dataFieldNames == ['name', 'email', 'defaultAddress']
 
-        def customerItem = importedData.items.get(1)
+        def customerItem = importedData.items[1]
         customerItem.rawValues.size() == 3
         customerItem.getRawValue('name') == 'Shelby Robinson'
         customerItem.getRawValue('email') == 'robinson@mail.com'
@@ -181,17 +182,17 @@ class XmlDataExtractorTest extends DataImportSpec {
         given:
         def xmlString = resources.getResourceAsString("test_support/input_data_files/xml/one_product.xml")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-xml");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, InputDataFormat.XML);
 
         when: 'imported data extracted'
-        def importedData = xmlDataExtractor.extract(xmlString.getBytes(), importConfiguration)
+        def importedData = xmlDataExtractor.extract(importConfiguration, xmlString.getBytes())
 
         then:
         importedData.dataFieldNames.size() == 3
         importedData.dataFieldNames == ['name', 'special', 'price']
 
         importedData.items.size() == 1
-        def firstProduct = importedData.items.get(0)
+        def firstProduct = importedData.items[0]
         firstProduct.itemIndex == 1
         firstProduct.rawValues.size() == 3
         firstProduct.getRawValue('name') == 'Cotek Battery Charger'

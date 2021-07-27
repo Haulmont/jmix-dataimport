@@ -17,8 +17,8 @@
 package io.jmix.dataimport.extractor.data.impl;
 
 import io.jmix.core.common.util.Dom4j;
-import io.jmix.dataimport.extractor.data.*;
 import io.jmix.dataimport.configuration.ImportConfiguration;
+import io.jmix.dataimport.extractor.data.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.dom4j.Document;
 import org.dom4j.Element;
@@ -35,6 +35,18 @@ import java.util.stream.Collectors;
 
 @Component("datimp_XmlDataExtractor")
 public class XmlDataExtractor implements ImportedDataExtractor {
+
+    @Override
+    public ImportedData extract(ImportConfiguration importConfiguration, InputStream inputStream) {
+        Document document = Dom4j.readDocument(inputStream);
+        return getImportedData(document);
+    }
+
+    @Override
+    public ImportedData extract(ImportConfiguration importConfiguration, byte[] inputData) {
+        Document document = Dom4j.readDocument(new ByteArrayInputStream(inputData));
+        return getImportedData(document);
+    }
 
     protected ImportedData getImportedData(Document document) {
         Element rootElement = document.getRootElement();
@@ -127,17 +139,5 @@ public class XmlDataExtractor implements ImportedDataExtractor {
             elementMap.get(name).add(element);
         });
         return elementMap;
-    }
-
-    @Override
-    public ImportedData extract(InputStream inputStream, ImportConfiguration importConfiguration) {
-        Document document = Dom4j.readDocument(inputStream);
-        return getImportedData(document);
-    }
-
-    @Override
-    public ImportedData extract(byte[] inputData, ImportConfiguration importConfiguration) {
-        Document document = Dom4j.readDocument(new ByteArrayInputStream(inputData));
-        return getImportedData(document);
     }
 }

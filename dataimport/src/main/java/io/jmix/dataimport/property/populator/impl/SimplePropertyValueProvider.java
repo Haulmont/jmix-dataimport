@@ -94,8 +94,6 @@ public class SimplePropertyValueProvider {
             } catch (NumberFormatException e) {
                 log.warn(String.format("Number could not be read: '%s' in.Will be ignored.", rawValue));
             }
-        } else if (rawValue instanceof BigDecimal) {
-            return (BigDecimal) rawValue;
         }
         return null;
     }
@@ -108,8 +106,6 @@ public class SimplePropertyValueProvider {
             } catch (NumberFormatException e) {
                 log.warn(String.format("Number could not be read: '%s'. Will be ignored.", rawValue));
             }
-        } else if (rawValue instanceof Double) {
-            return (Double) rawValue;
         }
         return null;
     }
@@ -122,8 +118,6 @@ public class SimplePropertyValueProvider {
             } catch (NumberFormatException e) {
                 log.warn(String.format("Number could not be read: '%s'. Will be ignored.", rawValue));
             }
-        } else if (rawValue instanceof Long) {
-            return (Long) rawValue;
         }
         return null;
     }
@@ -136,8 +130,6 @@ public class SimplePropertyValueProvider {
             } catch (NumberFormatException e) {
                 log.warn(String.format("Number could not be read: '%s'. Will be ignored.", rawValue));
             }
-        } else if (rawValue instanceof Integer) {
-            return (Integer) rawValue;
         }
         return null;
     }
@@ -163,8 +155,6 @@ public class SimplePropertyValueProvider {
             } catch (Exception e) {
                 log.warn(String.format("Boolean could not be read: '%s'. Will be ignored.", rawValue));
             }
-        } else if (rawValue instanceof Boolean) {
-            return (Boolean) rawValue;
         }
         return null;
     }
@@ -179,8 +169,6 @@ public class SimplePropertyValueProvider {
                 log.warn(String.format("Date could not be read: '%s'," +
                         " because it does not match the configured date format: '%s'. Will be ignored.", rawValue, importConfiguration.getDateFormat()));
             }
-        } else if (rawValue instanceof Date) {
-            return (Date) rawValue;
         }
         return null;
     }
@@ -195,8 +183,6 @@ public class SimplePropertyValueProvider {
                 log.warn(String.format("Date could not be read: '%s'," +
                         " because it does not match the configured date format: '%s'. Will be ignored.", rawValue, importConfiguration.getDateFormat()));
             }
-        } else if (rawValue instanceof LocalDate) {
-            return (LocalDate) rawValue;
         }
         return null;
     }

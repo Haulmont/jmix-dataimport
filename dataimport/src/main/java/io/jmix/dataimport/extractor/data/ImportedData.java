@@ -19,7 +19,14 @@ package io.jmix.dataimport.extractor.data;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * Represents the result of input data processing that contains:
+ * <ul>
+ *     <li>List of {@link ImportedDataItem}s: one imported data item contains the raw values of properties for one entity to import.</li>
+ *     <li>Data field names: names of the fields from input data (XLSX, CSV - column names specified in the first row,
+ *     JSON - field names from JSON object, XML - tag names).</li>
+ * </ul>
+ */
 public class ImportedData {
     protected List<ImportedDataItem> items = new ArrayList<>();
     protected List<String> dataFieldNames = new ArrayList<>(); //names to map the fields from file to entity properties

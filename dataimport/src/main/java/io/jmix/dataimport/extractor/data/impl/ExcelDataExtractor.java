@@ -16,11 +16,12 @@
 
 package io.jmix.dataimport.extractor.data.impl;
 
-import io.jmix.dataimport.exception.ImportException;
-import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
-import io.jmix.dataimport.extractor.data.ImportedData;
-import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.configuration.ImportConfiguration;
+import io.jmix.dataimport.exception.ImportException;
+import io.jmix.dataimport.extractor.data.ImportedData;
+import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
+import io.jmix.dataimport.extractor.data.ImportedDataItem;
+import org.apache.poi.hssf.usermodel.HSSFWorkbookFactory;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Component;
 
@@ -34,10 +35,10 @@ import java.util.List;
 public class ExcelDataExtractor implements ImportedDataExtractor {
 
     @Override
-    public ImportedData extract(InputStream inputStream, ImportConfiguration importConfiguration) {
+    public ImportedData extract(ImportConfiguration importConfiguration, InputStream inputStream) {
         Workbook workbook;
         try {
-            workbook = WorkbookFactory.create(inputStream);
+            workbook = HSSFWorkbookFactory.create(inputStream);
         } catch (IOException e) {
             throw new ImportException(e, "I/O error occurs during Excel data reading:" + e.getMessage());
         }
@@ -45,10 +46,10 @@ public class ExcelDataExtractor implements ImportedDataExtractor {
     }
 
     @Override
-    public ImportedData extract(byte[] inputData, ImportConfiguration importConfiguration) {
+    public ImportedData extract(ImportConfiguration importConfiguration, byte[] inputData) {
         Workbook workbook;
         try {
-            workbook = WorkbookFactory.create(new ByteArrayInputStream(inputData));
+            workbook = HSSFWorkbookFactory.create(new ByteArrayInputStream(inputData));
         } catch (IOException e) {
             throw new ImportException(e, "I/O error occurs during Excel data reading:" + e.getMessage());
         }

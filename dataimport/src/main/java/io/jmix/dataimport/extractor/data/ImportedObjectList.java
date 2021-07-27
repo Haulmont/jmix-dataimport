@@ -21,6 +21,59 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Represents an object list in JSON or XML with the following info:
+ * <ul>
+ *     <li>Data field name: for JSON - field name, for XML - tag name</li>
+ *     <li>List of {@link ImportedObject}s</li>
+ * </ul>
+ * <br/>
+ * JSON example:
+ * <br/>
+ * The "items" JSON array represents {@link ImportedObjectList} with data field name = "items" and two {@link ImportedObject}s.
+ * <pre>
+ * [
+ *   {
+ *     "orderNumber": "#001",
+ *     "orderDate": "12/07/2021",
+ *     "orderAmount": 100,
+ *     "items": [
+ *       {
+ *         "productName": "Outback Power Nano-Carbon Battery 12V",
+ *         "quantity": 4
+ *       },
+ *       {
+ *         "productName": "Fullriver Sealed Battery 6V",
+ *         "quantity": 5
+ *       }
+ *     ]
+ *   }
+ * ]
+ * </pre>
+ *
+ * XML example:
+ * <br/>
+ * The "items" tag represents {@link ImportedObjectList} with data field name = "items" and two {@link ImportedObject}s.
+ * <pre>
+ * &lt;orders&gt;
+ *     &lt;order&gt;
+ *         &lt;number&gt;#001&lt;/number&gt;
+ *         &lt;amount&gt;50.5&lt;/amount&gt;
+ *         &lt;date&gt;12/02/2021 12:00&lt;/date&gt;
+ *         &lt;items&gt;
+ *             &lt;item&gt;
+ *                 &lt;productName&gt;Outback Power Nano-Carbon Battery 12V&lt;/productName&gt;
+ *                 &lt;quantity&gt;5&lt;/quantity&gt;
+ *             &lt;/item&gt;
+ *             &lt;item&gt;
+ *                 &lt;productName&gt;Fullriver Sealed Battery 6V&lt;/productName&gt;
+ *                 &lt;quantity&gt;4&lt;/quantity&gt;
+ *             &lt;/item&gt;
+ *         &lt;/items&gt;
+ *     &lt;/order&gt;
+ * &lt;/orders&gt;
+ * </pre>
+ */
 public class ImportedObjectList {
     protected String dataFieldName;
     protected List<ImportedObject> importedObjects = new ArrayList<>();

@@ -18,6 +18,8 @@ package io.jmix.dataimport.result;
 
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
 
+import javax.annotation.Nullable;
+
 public class EntityImportError {
     protected ImportedDataItem importedDataItem;
 
@@ -60,6 +62,7 @@ public class EntityImportError {
         return this;
     }
 
+    @Nullable
     public Object getEntity() {
         return entity;
     }

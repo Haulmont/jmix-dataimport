@@ -25,23 +25,35 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.Map;
+
 @Component("datimp_ImportedDataExtractors")
 public class ImportedDataExtractors {
     @Autowired
     protected ApplicationContext applicationContext;
 
+    protected Map<String, ImportedDataExtractor> extractorsByInputFormats = new HashMap<>();
+
+    @PostConstruct
+    protected void init() {
+        extractorsByInputFormats.put(InputDataFormat.CSV, applicationContext.getBean(CsvDataExtractor.class));
+        extractorsByInputFormats.put(InputDataFormat.XLSX, applicationContext.getBean(ExcelDataExtractor.class));
+        extractorsByInputFormats.put(InputDataFormat.JSON, applicationContext.getBean(JsonDataExtractor.class));
+        extractorsByInputFormats.put(InputDataFormat.XML, applicationContext.getBean(XmlDataExtractor.class));
+        addCustomExtractors();
+    }
+
     public ImportedDataExtractor getExtractor(String inputDataFormat) {
-        switch (inputDataFormat) {
-            case InputDataFormat.CSV:
-                return applicationContext.getBean(CsvDataExtractor.class);
-            case InputDataFormat.XLSX:
-                return applicationContext.getBean(ExcelDataExtractor.class);
-            case InputDataFormat.JSON:
-                return applicationContext.getBean(JsonDataExtractor.class);
-            case InputDataFormat.XML:
-                return applicationContext.getBean(XmlDataExtractor.class);
-            default:
-                throw new IllegalArgumentException(String.format("Input data format [%s] is not supported for import", inputDataFormat));
+        ImportedDataExtractor dataExtractor = extractorsByInputFormats.get(inputDataFormat);
+        if (dataExtractor == null) {
+            throw new IllegalArgumentException(String.format("Input data format [%s] is not supported for import", inputDataFormat));
         }
+        return dataExtractor;
+    }
+
+    protected void addCustomExtractors() {
+
     }
 }

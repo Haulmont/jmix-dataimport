@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package entity_populator
+package value_provider
 
 import io.jmix.core.FetchPlan
 import io.jmix.core.common.util.ParamsMap
 import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
+import io.jmix.dataimport.configuration.mapping.CustomPropertyMapping
 import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
-import io.jmix.dataimport.configuration.ImportConfigurationBuilder
 import io.jmix.dataimport.extractor.data.ImportedDataItem
-import io.jmix.dataimport.extractor.data.ImportedObject
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
 import test_support.entity.Customer
@@ -33,13 +33,13 @@ import test_support.entity.Product
 class CustomValueProviderTest extends DataImportSpec {
 
     @Autowired
-    protected EntityPropertiesPopulator propertiesPopulator
+    protected EntityPropertiesPopulator entityPropertiesPopulator
 
     def 'test custom value for simple property'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Product, "product")
-                .addCustomPropertyMapping("price", "Price", customValueContext -> {
-                    def rawValue = customValueContext.getRawValue()
+        def configuration = ImportConfiguration.builder(Product, InputDataFormat.XLSX)
+                .addCustomPropertyMapping("price", "Price", customMappingContext -> {
+                    def rawValue = customMappingContext.rawValues["Price"]
                     try {
                         def value = new BigDecimal(rawValue)
                         return value
@@ -53,21 +53,23 @@ class CustomValueProviderTest extends DataImportSpec {
         importedDataItem.addRawValue('Price', 'string')
 
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def specialProduct = dataManager.create(Product)
-        def entityFillingInfo = propertiesPopulator.populateProperties(specialProduct, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(specialProduct, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == specialProduct
+        entityInfo.entity == specialProduct
         specialProduct.price == 0
     }
 
 
     def 'test custom value of reference property if raw value is string'() {
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addCustomPropertyMapping("customer", "customerName", customValueContext -> {
-                    String customerName = customValueContext.getRawValue()
+        given:
+        def customMapping = new CustomPropertyMapping("customer")
+                .setDataFieldName("customerName")
+                .setCustomValueFunction(customMappingContext -> {
+                    String customerName = customMappingContext.rawValues["customerName"]
                     def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
                     if (customer == null) {
                         def newCustomer = dataManager.create(Customer)
@@ -75,37 +77,40 @@ class CustomValueProviderTest extends DataImportSpec {
                         return newCustomer
                     }
                 })
-                .build()
+        def configuration = new ImportConfiguration(Order, InputDataFormat.XML)
+                .addPropertyMapping(customMapping)
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('customerName', 'John Dow')
 
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = propertiesPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
+        entityInfo.entity == order
         checkCustomer(order.customer, 'John Dow', null, null)
     }
 
     def 'test custom value of reference property if other raw values are taken from imported item'() {
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addCustomPropertyMapping("customer", "customerName", customValueContext -> {
-                    String customerName = customValueContext.getRawValue()
-                    def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
-                    String email = customValueContext.getRawValuesSource().getRawValue('customerEmail')
-                    String grade = customValueContext.getRawValuesSource().getRawValue('customerGrade')
-                    if (customer == null) {
-                        def newCustomer = dataManager.create(Customer)
-                        newCustomer.name = customerName
-                        newCustomer.email = email
-                        newCustomer.grade = CustomerGrade.fromId(grade)
-                        return newCustomer
-                    }
-                })
-                .build()
+        given:
+        def configuration = new ImportConfiguration(Order, InputDataFormat.XML)
+                .addPropertyMapping(new CustomPropertyMapping("customer")
+                        .setCustomValueFunction((customMappingContext) -> {
+                            String customerName = customMappingContext.rawValues["customerName"]
+                            def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
+                            String email = customMappingContext.rawValues['customerEmail']
+                            String grade = customMappingContext.rawValues['customerGrade']
+                            if (customer == null) {
+                                def newCustomer = dataManager.create(Customer)
+                                newCustomer.name = customerName
+                                newCustomer.email = email
+                                newCustomer.grade = CustomerGrade.fromId(grade)
+                                return newCustomer
+                            }
+                        })
+                )
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('customerName', 'John Dow')
@@ -113,25 +118,24 @@ class CustomValueProviderTest extends DataImportSpec {
         importedDataItem.addRawValue('customerGrade', 'Bronze')
 
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = propertiesPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
+        entityInfo.entity == order
         checkCustomer(order.customer, 'John Dow', 'j.dow@mail.com', CustomerGrade.BRONZE)
     }
 
     def 'test custom value of reference property if raw value is object'() {
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addCustomPropertyMapping("customer", "customer", customValueContext -> {
-                    ImportedObject customerObject = customValueContext.getRawValue() as ImportedObject
-                    String customerName = customerObject.getRawValue('name')
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addCustomPropertyMapping("customer", "customer", customMappingContext -> {
+                    String customerName = customMappingContext.rawValues['name']
 
                     def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
                     if (customer == null) {
-                        String email = customerObject.getRawValue('email')
-                        String grade = customerObject.getRawValue('grade')
+                        String email = customMappingContext.rawValues['email']
+                        String grade = customMappingContext.rawValues['grade']
 
                         def newCustomer = dataManager.create(Customer)
                         newCustomer.name = customerName
@@ -148,12 +152,12 @@ class CustomValueProviderTest extends DataImportSpec {
                 'grade', CustomerGrade.BRONZE.id)))
 
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = propertiesPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
+        entityInfo.entity == order
         checkCustomer(order.customer, 'John Dow', 'j.dow@mail.com', CustomerGrade.BRONZE)
     }
 }

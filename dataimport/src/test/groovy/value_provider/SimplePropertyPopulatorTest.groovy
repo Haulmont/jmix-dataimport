@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-package entity_populator
+package value_provider
 
-import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
-import io.jmix.dataimport.configuration.ImportConfigurationBuilder
+import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.extractor.data.ImportedDataItem
+import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
-import test_support.entity.Customer
-import test_support.entity.CustomerGrade
-import test_support.entity.Order
-import test_support.entity.OrderLine
-import test_support.entity.Product
-import test_support.entity.TestEntity
+import test_support.entity.*
 
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -34,66 +30,66 @@ import java.time.format.DateTimeFormatter
 
 class SimplePropertyPopulatorTest extends DataImportSpec {
     @Autowired
-    protected EntityPropertiesPopulator entityPopulator
+    protected EntityPropertiesPopulator entityPropertiesPopulator
 
 
     def 'test string property'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Product, "product")
+        def configuration = ImportConfiguration.builder(Product, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "Product Name")
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Product Name', 'Solar-One HUP Flooded Battery 48V')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def product = dataManager.create(Product)
-        def entityFillingInfo = entityPopulator.populateProperties(product, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(product, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == product
+        entityInfo.entity == product
         product.name == 'Solar-One HUP Flooded Battery 48V'
     }
 
     def 'test valid integer property'() {
         given:
-        def configuration = new ImportConfigurationBuilder(OrderLine, "orderLine")
+        def configuration = ImportConfiguration.builder(OrderLine, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("quantity", "Quantity")
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Quantity', '5')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def orderLine = dataManager.create(OrderLine)
-        def entityFillingInfo = entityPopulator.populateProperties(orderLine, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(orderLine, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == orderLine
+        entityInfo.entity == orderLine
         orderLine.quantity == 5
     }
 
     def 'test invalid integer property'() {
         given:
-        def configuration = new ImportConfigurationBuilder(OrderLine, "orderLine")
+        def configuration = ImportConfiguration.builder(OrderLine, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("quantity", "Quantity")
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Quantity', 'invalid')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def orderLine = dataManager.create(OrderLine)
-        def entityFillingInfo = entityPopulator.populateProperties(orderLine, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(orderLine, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == orderLine
+        entityInfo.entity == orderLine
         orderLine.quantity == null
     }
 
     def 'test valid date value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("date", "Order Date")
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
@@ -103,20 +99,19 @@ class SimplePropertyPopulatorTest extends DataImportSpec {
 
         def orderDate = new SimpleDateFormat("dd/MM/yyyy hh:mm").parse('12/06/2021 12:00')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 0
+        entityInfo.entity == order
         order.date == orderDate
     }
 
     def 'test invalid date value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("date", "Order Date")
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
@@ -124,20 +119,19 @@ class SimplePropertyPopulatorTest extends DataImportSpec {
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Order Date', '12.06.2021')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 0
+        entityInfo.entity == order
         order.date == null
     }
 
     def 'test boolean true value with custom format'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Product, "product")
+        def configuration = ImportConfiguration.builder(Product, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("special", "Special")
                 .withBooleanFormats("Yes", "No")
                 .build()
@@ -145,19 +139,19 @@ class SimplePropertyPopulatorTest extends DataImportSpec {
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Special', 'Yes')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def specialProduct = dataManager.create(Product)
-        def entityFillingInfo = entityPopulator.populateProperties(specialProduct, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(specialProduct, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == specialProduct
+        entityInfo.entity == specialProduct
         specialProduct.special
     }
 
     def 'test boolean false value with custom format'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Product, "product")
+        def configuration = ImportConfiguration.builder(Product, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("special", "Special")
                 .withBooleanFormats("Yes", "No")
                 .build()
@@ -165,38 +159,38 @@ class SimplePropertyPopulatorTest extends DataImportSpec {
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Special', 'No')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def specialProduct = dataManager.create(Product)
-        def entityFillingInfo = entityPopulator.populateProperties(specialProduct, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(specialProduct, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == specialProduct
+        entityInfo.entity == specialProduct
         specialProduct.special != null
         !specialProduct.special
     }
 
     def 'test valid boolean value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Product, "product")
+        def configuration = ImportConfiguration.builder(Product, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("special", "Special")
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Special', 'true')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def specialProduct = dataManager.create(Product)
-        def entityFillingInfo = entityPopulator.populateProperties(specialProduct, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(specialProduct, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == specialProduct
+        entityInfo.entity == specialProduct
         specialProduct.special
     }
 
     def 'test invalid BigDecimal value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Product, "product")
+        def configuration = ImportConfiguration.builder(Product, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("price", "Price")
                 .build()
 
@@ -204,19 +198,19 @@ class SimplePropertyPopulatorTest extends DataImportSpec {
         importedDataItem.addRawValue('Price', 'string')
 
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def specialProduct = dataManager.create(Product)
-        def entityFillingInfo = entityPopulator.populateProperties(specialProduct, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(specialProduct, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == specialProduct
+        entityInfo.entity == specialProduct
         specialProduct.price == null
     }
 
     def 'test valid local date value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(TestEntity, "testEntity")
+        def configuration = ImportConfiguration.builder(TestEntity, InputDataFormat.XLSX)
                 .addSimplePropertyMapping('localDateProperty', 'Date')
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
@@ -226,19 +220,19 @@ class SimplePropertyPopulatorTest extends DataImportSpec {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(configuration.getDateFormat());
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def testEntity = dataManager.create(TestEntity)
-        def entityFillingInfo = entityPopulator.populateProperties(testEntity, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(testEntity, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == testEntity
+        entityInfo.entity == testEntity
         testEntity.localDateProperty == LocalDate.parse('12/06/2021 12:00', formatter)
     }
 
     def 'test invalid local date value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(TestEntity, "testEntity")
+        def configuration = ImportConfiguration.builder(TestEntity, InputDataFormat.XLSX)
                 .addSimplePropertyMapping('localDateProperty', 'Date')
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
@@ -248,121 +242,121 @@ class SimplePropertyPopulatorTest extends DataImportSpec {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(configuration.getDateFormat());
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def testEntity = dataManager.create(TestEntity)
-        def entityFillingInfo = entityPopulator.populateProperties(testEntity, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(testEntity, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == testEntity
+        entityInfo.entity == testEntity
         testEntity.localDateProperty == null
     }
 
     def 'test valid long value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(TestEntity, "testEntity")
+        def configuration = ImportConfiguration.builder(TestEntity, InputDataFormat.XLSX)
                 .addSimplePropertyMapping('longProperty', 'Long')
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Long', Long.MAX_VALUE.toString())
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def testEntity = dataManager.create(TestEntity)
-        def entityFillingInfo = entityPopulator.populateProperties(testEntity, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(testEntity, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == testEntity
+        entityInfo.entity == testEntity
         testEntity.longProperty == Long.MAX_VALUE
     }
 
     def 'test invalid long value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(TestEntity, "testEntity")
+        def configuration = ImportConfiguration.builder(TestEntity, InputDataFormat.XLSX)
                 .addSimplePropertyMapping('longProperty', 'Long')
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Long', 'invalid')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def testEntity = dataManager.create(TestEntity)
-        def entityFillingInfo = entityPopulator.populateProperties(testEntity, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(testEntity, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == testEntity
+        entityInfo.entity == testEntity
         testEntity.longProperty == null
     }
 
     def 'test valid double value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(TestEntity, "testEntity")
+        def configuration = ImportConfiguration.builder(TestEntity, InputDataFormat.XLSX)
                 .addSimplePropertyMapping('doubleProperty', 'Double')
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Double', '1.5')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def testEntity = dataManager.create(TestEntity)
-        def entityFillingInfo = entityPopulator.populateProperties(testEntity, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(testEntity, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == testEntity
+        entityInfo.entity == testEntity
         testEntity.doubleProperty == 1.5
     }
 
     def 'test invalid double value'() {
         given:
-        def configuration = new ImportConfigurationBuilder(TestEntity, "testEntity")
+        def configuration = ImportConfiguration.builder(TestEntity, InputDataFormat.XLSX)
                 .addSimplePropertyMapping('doubleProperty', 'Double')
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Double', 'invalid')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def testEntity = dataManager.create(TestEntity)
-        def entityFillingInfo = entityPopulator.populateProperties(testEntity, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(testEntity, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == testEntity
+        entityInfo.entity == testEntity
         testEntity.doubleProperty == null
     }
 
     def 'test valid enum property'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, "customer")
                 .addSimplePropertyMapping("grade", "Grade")
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Grade', 'Bronze')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         customer.grade == CustomerGrade.BRONZE
     }
 
     def 'test invalid enum property'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, "customer")
                 .addSimplePropertyMapping("grade", "Grade")
                 .build()
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('Grade', 'NewGrade')
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         customer.grade == null
     }
 }

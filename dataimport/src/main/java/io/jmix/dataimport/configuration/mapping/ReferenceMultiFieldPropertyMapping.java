@@ -16,13 +16,12 @@
 
 package io.jmix.dataimport.configuration.mapping;
 
-import io.jmix.dataimport.property.populator.PropertyMappingContext;
+import io.jmix.dataimport.property.populator.CustomMappingContext;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,15 +42,9 @@ import java.util.stream.Collectors;
 public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
     protected String entityPropertyName;
     protected String dataFieldName; //optional
-    protected List<PropertyMapping> referencePropertyMappings;
+    protected List<PropertyMapping> referencePropertyMappings = new ArrayList<>();
     protected List<String> lookupPropertyNames;
     protected ReferenceImportPolicy referenceImportPolicy;
-
-    public ReferenceMultiFieldPropertyMapping(String entityPropertyName,
-                                              ReferenceImportPolicy importPolicy) {
-        this.entityPropertyName = entityPropertyName;
-        this.referenceImportPolicy = importPolicy;
-    }
 
     private ReferenceMultiFieldPropertyMapping(Builder builder) {
         this.entityPropertyName = builder.entityPropertyName;
@@ -84,16 +77,6 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
         return this;
     }
 
-    public ReferenceMultiFieldPropertyMapping addReferencePropertyMapping(PropertyMapping referencePropertyMapping) {
-        this.referencePropertyMappings.add(referencePropertyMapping);
-        return this;
-    }
-
-    public ReferenceMultiFieldPropertyMapping addSimplePropertyMapping(String entityProperty, String dataFieldName) {
-        this.referencePropertyMappings.add(new SimplePropertyMapping(entityProperty, dataFieldName));
-        return this;
-    }
-
     public List<String> getLookupPropertyNames() {
         return lookupPropertyNames;
     }
@@ -103,31 +86,16 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
         return this;
     }
 
-    public ReferenceMultiFieldPropertyMapping setLookupPropertyNames(String... lookupPropertyNames) {
-        this.lookupPropertyNames = Arrays.asList(lookupPropertyNames);
-        return this;
-    }
-
     public ReferenceImportPolicy getReferenceImportPolicy() {
         return referenceImportPolicy;
-    }
-
-    public ReferenceMultiFieldPropertyMapping setReferenceImportPolicy(ReferenceImportPolicy referenceImportPolicy) {
-        this.referenceImportPolicy = referenceImportPolicy;
-        return this;
     }
 
     public String getEntityPropertyName() {
         return entityPropertyName;
     }
 
-    public ReferenceMultiFieldPropertyMapping setEntityPropertyName(String entityPropertyName) {
-        this.entityPropertyName = entityPropertyName;
-        return this;
-    }
-
-    public static Builder builder(String entityPropertyName) {
-        return new Builder(entityPropertyName);
+    public static Builder builder(String entityPropertyName, ReferenceImportPolicy policy) {
+        return new Builder(entityPropertyName, policy);
     }
 
     public static class Builder {
@@ -138,8 +106,9 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
         private String dataFieldName; //optional - makes sense for XML and JSON only
         private boolean lookupByAllSimpleProperties;
 
-        public Builder(String entityPropertyName) {
+        public Builder(String entityPropertyName, ReferenceImportPolicy referenceImportPolicy) {
             this.entityPropertyName = entityPropertyName;
+            this.referenceImportPolicy = referenceImportPolicy;
         }
 
         public Builder addSimplePropertyMapping(String entityPropertyName, String dataFieldName) {
@@ -149,20 +118,26 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
 
         public Builder addCustomPropertyMapping(String entityPropertyName,
                                                 String dataFieldName,
-                                                Function<PropertyMappingContext, Object> customValueFunction) {
+                                                Function<CustomMappingContext, Object> customValueFunction) {
             this.referencePropertyMappings.add(new CustomPropertyMapping(entityPropertyName, dataFieldName, customValueFunction));
             return this;
         }
 
+        public Builder addCustomPropertyMapping(String entityPropertyName,
+                                                Function<CustomMappingContext, Object> customValueFunction) {
+            this.referencePropertyMappings.add(new CustomPropertyMapping(entityPropertyName)
+                    .setCustomValueFunction(customValueFunction));
+            return this;
+        }
+
         public Builder addReferencePropertyMapping(String entityPropertyName,
-                                                   String lookupPropertyName,
                                                    String dataFieldName,
+                                                   String lookupPropertyName,
                                                    ReferenceImportPolicy policy) {
-            this.referencePropertyMappings.add(ReferencePropertyMapping.byEntityPropertyName(entityPropertyName)
-                    .withDataFieldName(dataFieldName)
-                    .withLookupPropertyName(lookupPropertyName)
-                    .withReferenceImportPolicy(policy)
-                    .build());
+            this.referencePropertyMappings.add(new ReferencePropertyMapping(entityPropertyName)
+                    .setDataFieldName(dataFieldName)
+                    .setLookupPropertyName(lookupPropertyName)
+                    .setReferenceImportPolicy(policy));
             return this;
         }
 
@@ -173,26 +148,6 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
 
         public Builder withLookupPropertyNames(List<String> lookupPropertyNames) {
             this.lookupPropertyNames = lookupPropertyNames;
-            return this;
-        }
-
-        public Builder withSimplePropertyMappings(String entityPropertyName1, String dataFieldName1,
-                                                  String entityPropertyName2, String dataFieldName2) {
-            this.referencePropertyMappings.add(new SimplePropertyMapping(entityPropertyName1, dataFieldName1));
-            this.referencePropertyMappings.add(new SimplePropertyMapping(entityPropertyName2, dataFieldName2));
-            return this;
-        }
-
-        /**
-         * Creates simple property mappings for each key-value pair in map.
-         * <br/>
-         * <b>Note:</b> Key is interpreted as entity property name, value - data field name.
-         *
-         * @param simplePropertyMappings map that contains data for simple property mapping where key - entity property name, value - data field name
-         * @return current instance of builder
-         */
-        public Builder withSimplePropertyMappings(Map<String, String> simplePropertyMappings) {
-            simplePropertyMappings.forEach(this::addSimplePropertyMapping);
             return this;
         }
 
@@ -208,11 +163,6 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
 
         public Builder withLookupPropertyNames(String... lookupPropertyNames) {
             this.lookupPropertyNames = Arrays.asList(lookupPropertyNames);
-            return this;
-        }
-
-        public Builder withReferenceImportPolicy(ReferenceImportPolicy referenceImportPolicy) {
-            this.referenceImportPolicy = referenceImportPolicy;
             return this;
         }
 

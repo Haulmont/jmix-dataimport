@@ -17,11 +17,11 @@
 package io.jmix.dataimport.extractor.data.impl;
 
 import com.opencsv.CSVReader;
-import io.jmix.dataimport.exception.ImportException;
-import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
-import io.jmix.dataimport.extractor.data.ImportedData;
-import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.configuration.ImportConfiguration;
+import io.jmix.dataimport.exception.ImportException;
+import io.jmix.dataimport.extractor.data.ImportedData;
+import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
+import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +33,7 @@ import java.util.List;
 public class CsvDataExtractor implements ImportedDataExtractor {
 
     @Override
-    public ImportedData extract(InputStream inputStream, ImportConfiguration importConfiguration) {
+    public ImportedData extract(ImportConfiguration importConfiguration, InputStream inputStream) {
         CSVReader csvReader;
         try {
             csvReader = new CSVReader(new InputStreamReader(inputStream, importConfiguration.getInputDataCharset()));
@@ -44,7 +44,7 @@ public class CsvDataExtractor implements ImportedDataExtractor {
     }
 
     @Override
-    public ImportedData extract(byte[] inputData, ImportConfiguration importConfiguration) {
+    public ImportedData extract(ImportConfiguration importConfiguration, byte[] inputData) {
         CSVReader csvReader;
         try {
             csvReader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(inputData), importConfiguration.getInputDataCharset()));

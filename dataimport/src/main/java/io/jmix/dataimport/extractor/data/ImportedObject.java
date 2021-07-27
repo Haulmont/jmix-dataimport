@@ -22,6 +22,48 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Represents an object in JSON or XML with the following info:
+ * <ul>
+ *     <li>Data field name: for JSON - field name, for XML - tag name</li>
+ *     <li>Raw values map: for JSON - raw values of JSON object fields by field names,
+ *     for XML: values of child tags by tag names</li>
+ * </ul>
+ * <br/>
+ * JSON example:
+ * <br/>
+ * The "customer" object represents {@link ImportedObject} with data field name = "customer" and two raw values: "name" and "email".
+ * <pre>
+ * [
+ *   {
+ *     "orderNumber": "#001",
+ *     "orderDate": "12/07/2021",
+ *     "orderAmount": 100,
+ *     "customer": {
+ *       "name": "Shelby Robinson",
+ *       "email": "robinson@mail.com"
+ *     }
+ *   }
+ * ]
+ * </pre>
+ *
+ * XML example:
+ * <br/>
+ * The "customer" tag represents {@link ImportedObject} with data field name = "customer" and two raw values: "name" and "email".
+ * <pre>
+ * &lt;orders&gt;
+ *     &lt;order&gt;
+ *         &lt;number&gt;#001&lt;/number&gt;
+ *         &lt;amount&gt;50.5&lt;/amount&gt;
+ *         &lt;date&gt;12/02/2021 12:00&lt;/date&gt;
+ *         &lt;customer&gt;
+ *             &lt;name&gt;Parker Leighton&lt;/name&gt;
+ *             &lt;email&gt;leighton@mail.com&lt;/email&gt;
+ *         &lt;/customer&gt;
+ *     &lt;/order&gt;
+ * &lt;/orders&gt;
+ * </pre>
+ */
 public class ImportedObject implements RawValuesSource {
     protected String dataFieldName;
     protected Map<String, Object> rawValues = new HashMap<>();

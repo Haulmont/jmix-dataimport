@@ -17,18 +17,12 @@
 package io.jmix.dataimport.exception;
 
 public class ImportException extends RuntimeException {
-    protected String errorMessage;
-
     public ImportException(String errorMessage) {
-        this.errorMessage = errorMessage;
+        super(errorMessage);
     }
 
     public ImportException(Throwable cause, String errorMessage) {
-        super(cause);
-        this.errorMessage = errorMessage;
-    }
+        super(errorMessage, cause);
 
-    public String getErrorMessage() {
-        return errorMessage;
     }
 }

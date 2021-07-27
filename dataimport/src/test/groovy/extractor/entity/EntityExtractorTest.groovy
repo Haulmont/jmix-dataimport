@@ -16,6 +16,8 @@
 
 package extractor.entity
 
+import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.configuration.ImportConfigurationBuilder
 import io.jmix.dataimport.extractor.data.ImportedData
 import io.jmix.dataimport.extractor.data.ImportedDataItem
@@ -34,7 +36,7 @@ class EntityExtractorTest extends DataImportSpec {
 
     def 'test one entity extraction'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Product, "product")
+        def configuration = ImportConfiguration.builder(Product, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "Product Name")
                 .addSimplePropertyMapping("price", "Price")
                 .build()
@@ -52,8 +54,7 @@ class EntityExtractorTest extends DataImportSpec {
     }
 
     def 'test several unique entities extraction'() {
-        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders")
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("orderNumber", "orderNum")
                 .addSimplePropertyMapping("amount", "orderAmount")
                 .addSimplePropertyMapping("date", "orderDate")
@@ -61,7 +62,7 @@ class EntityExtractorTest extends DataImportSpec {
                 .build()
 
 
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "name")
                 .addPropertyMapping(ordersPropertyMapping)
                 .withDateFormat("dd/MM/yyyy hh:mm")
@@ -88,36 +89,32 @@ class EntityExtractorTest extends DataImportSpec {
 
         then:
         entityExtractionResults.size() == 2
-        def entityExtractionResult1 = entityExtractionResults.get(0)
+        def entityExtractionResult1 = entityExtractionResults[0]
         entityExtractionResult1.importedDataItem == importedDataItem1
 
-        def entityExtractionResult2 = entityExtractionResults.get(1)
+        def entityExtractionResult2 = entityExtractionResults[1]
         entityExtractionResult2.importedDataItem == importedDataItem2
 
         def customer1 = entityExtractionResult1.entity as Customer
         checkCustomer(customer1, 'John Dow', null, null)
         customer1.orders.size() == 1
-        checkOrder(customer1.orders.get(0), '#001', '12/06/2021 12:00', 20)
+        checkOrder(customer1.orders[0], '#001', '12/06/2021 12:00', 20)
 
         def customer2 = entityExtractionResult2.entity as Customer
         checkCustomer(customer2, 'Tom Smith', null, null)
         customer2.orders.size() == 1
-        checkOrder(customer2.orders.get(0), '#002', '25/06/2021 12:00', 50)
+        checkOrder(customer2.orders[0], '#002', '25/06/2021 12:00', 50)
     }
 
 
     def 'test several entities extraction with duplicates'() {
-        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder('orders')
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
-                .addSimplePropertyMapping("orderNumber", "orderNum")
-                .addSimplePropertyMapping("amount", "orderAmount")
-                .addSimplePropertyMapping("date", "orderDate")
-                .build()
-
-
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "name")
-                .addPropertyMapping(ordersPropertyMapping)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('orders', ReferenceImportPolicy.CREATE)
+                        .addSimplePropertyMapping("orderNumber", "orderNum")
+                        .addSimplePropertyMapping("amount", "orderAmount")
+                        .addSimplePropertyMapping("date", "orderDate")
+                        .build())
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
 
@@ -142,14 +139,14 @@ class EntityExtractorTest extends DataImportSpec {
 
         then:
         entityExtractionResults.size() == 1
-        def entityExtractionResult = entityExtractionResults.get(0)
+        def entityExtractionResult = entityExtractionResults[0]
         entityExtractionResult.importedDataItem == importedDataItem2
 
         def customer = entityExtractionResult.entity as Customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.orders.size() == 2
 
-        checkOrder(customer.orders.get(0), '#001', '12/06/2021 12:00', 20)
-        checkOrder(customer.orders.get(1), '#002', '25/06/2021 12:00', 50)
+        checkOrder(customer.orders[0], '#001', '12/06/2021 12:00', 20)
+        checkOrder(customer.orders[1], '#002', '25/06/2021 12:00', 50)
     }
 }

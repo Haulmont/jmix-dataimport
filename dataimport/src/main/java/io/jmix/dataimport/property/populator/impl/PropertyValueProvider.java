@@ -17,7 +17,7 @@
 package io.jmix.dataimport.property.populator.impl;
 
 import io.jmix.core.Metadata;
-import io.jmix.dataimport.configuration.*;
+import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.configuration.mapping.*;
 import io.jmix.dataimport.extractor.data.RawValuesSource;
 import io.jmix.dataimport.property.populator.PropertyMappingContext;
@@ -48,10 +48,10 @@ public class PropertyValueProvider {
                                  ImportConfiguration importConfiguration,
                                  PropertyMapping propertyMapping,
                                  RawValuesSource rawValuesSource) {
-        PropertyMappingContext propertyMappingContext = createContext(entity, importConfiguration, propertyMapping, rawValuesSource);
         if (propertyMapping instanceof CustomPropertyMapping) {
-            return customValueProvider.getValue(propertyMappingContext);
+            return customValueProvider.getValue((CustomPropertyMapping) propertyMapping, importConfiguration, getRawValueSource(rawValuesSource, propertyMapping));
         } else if (propertyMapping instanceof SimplePropertyMapping) {
+            PropertyMappingContext propertyMappingContext = createContext(entity, importConfiguration, propertyMapping, rawValuesSource);
             return simplePropertyValueProvider.getValue(propertyMappingContext);
         }
 

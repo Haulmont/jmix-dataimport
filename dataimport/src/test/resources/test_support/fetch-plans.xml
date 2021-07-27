@@ -36,6 +36,7 @@
         <property name="lines" fetchPlan="_base">
             <property name="product" fetchPlan="_base"/>
         </property>
+        <property name="deliveryDetails" fetchPlan="_base"/>
     </fetchPlan>
 
     <fetchPlan class="test_support.entity.OrderLine" name="orderLine-full" extends="_base">

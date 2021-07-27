@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package entity_populator
+package value_provider
 
+import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
 import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
-import io.jmix.dataimport.configuration.ImportConfigurationBuilder
 import io.jmix.dataimport.extractor.data.ImportedDataItem
 import io.jmix.dataimport.extractor.data.ImportedObject
 import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
 import test_support.entity.Order
-
-import java.text.SimpleDateFormat
 
 class EmbeddableEntityCreationTest extends DataImportSpec {
 
@@ -35,10 +34,9 @@ class EmbeddableEntityCreationTest extends DataImportSpec {
 
     def 'test embeddable entity creation using data from imported object'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("deliveryDetails")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("deliveryDetails", ReferenceImportPolicy.CREATE)
                         .withDataFieldName("deliveryDetails")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping("deliveryDate", "deliveryDate")
                         .addSimplePropertyMapping("fullAddress", "fullAddress")
                         .build())
@@ -52,23 +50,20 @@ class EmbeddableEntityCreationTest extends DataImportSpec {
 
         importedDataItem.addRawValue('deliveryDetails', deliveryDetailsImportedObject)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = propertiesPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = propertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 0
-        order.deliveryDetails != null
-        order.deliveryDetails.deliveryDate == new SimpleDateFormat('dd/MM/yyyy hh:mm').parse('25/06/2021 17:00')
-        order.deliveryDetails.fullAddress == null
+        entityInfo.entity == order
+        entityInfo.createdReferences.size() == 0
+        checkDeliveryDetails(order.deliveryDetails, '25/06/2021 17:00', null)
     }
 
     def 'test embeddable entity creation using data from imported data item'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("deliveryDetails")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("deliveryDetails", ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping("deliveryDate", "deliveryDate")
                         .addSimplePropertyMapping("fullAddress", "fullAddress")
                         .build())
@@ -79,15 +74,13 @@ class EmbeddableEntityCreationTest extends DataImportSpec {
         importedDataItem.addRawValue("deliveryDate", '25/06/2021 17:00')
         importedDataItem.addRawValue("fullAddress", null)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = propertiesPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = propertiesPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
-        entityFillingInfo.createdReferences.size() == 0
-        order.deliveryDetails != null
-        order.deliveryDetails.deliveryDate == new SimpleDateFormat('dd/MM/yyyy hh:mm').parse('25/06/2021 17:00')
-        order.deliveryDetails.fullAddress == null
+        entityInfo.entity == order
+        entityInfo.createdReferences.size() == 0
+        checkDeliveryDetails(order.deliveryDetails, '25/06/2021 17:00', null)
     }
 }

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package entity_populator
+package value_provider
 
-import com.google.common.collect.ImmutableMap
+
 import io.jmix.core.common.util.ParamsMap
-import io.jmix.dataimport.configuration.ImportConfigurationBuilder
+import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.extractor.data.ImportedDataItem
 import io.jmix.dataimport.extractor.data.ImportedObject
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
@@ -31,14 +32,14 @@ import test_support.entity.Customer
 import test_support.entity.Order
 import test_support.entity.PaymentType
 
-class OneToOneAssociationCreationTest extends DataImportSpec {
+class OneToOneReferenceCreationTest extends DataImportSpec {
 
     @Autowired
     protected EntityPropertiesPopulator entityPopulator
 
     def 'test creation of one-to-one association from imported data item'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
                 .addReferencePropertyMapping("bonusCard", "cardNumber", "bonusCardNumber", ReferenceImportPolicy.CREATE)
                 .build()
@@ -46,23 +47,22 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
         importedDataItem.addRawValue("customerName", "John Dow")
         importedDataItem.addRawValue("bonusCardNumber", "12345-6789")
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         checkBonusCard(customer.bonusCard, '12345-6789', null, null)
     }
 
     def 'test creation of one-to-one association from separate imported object'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("bonusCard")
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("bonusCard", ReferenceImportPolicy.CREATE_IF_MISSING)
                         .withDataFieldName("bonusCard")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE_IF_MISSING)
                         .addSimplePropertyMapping("cardNumber", "cardNumber")
                         .addSimplePropertyMapping("isActive", "isActive")
                         .addSimplePropertyMapping("balance", "balance")
@@ -75,26 +75,25 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
                 "isActive", "True",
                 "balance", "50"));
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         checkBonusCard(customer.bonusCard, '12345-67890', true, 50 as BigDecimal)
     }
 
     def 'test ignore not existing one-to-one association from separate imported object'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("bonusCard")
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("bonusCard", ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .withDataFieldName("bonusCard")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.IGNORE_IF_MISSING)
-                        .withSimplePropertyMappings(ImmutableMap.of("cardNumber", "cardNumber",
-                                "isActive", "isActive",
-                                "balance", "balance"))
+                        .addSimplePropertyMapping("cardNumber", "cardNumber")
+                        .addSimplePropertyMapping("isActive", "isActive")
+                        .addSimplePropertyMapping("balance", "balance")
                         .lookupByAllSimpleProperties()
                         .build())
                 .build()
@@ -107,19 +106,19 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
                 "balance", "50"))
         importedDataItem.addRawValue("bonusCard", bonusCardObject);
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.bonusCard == null
     }
 
     def 'test ignore not existing one-to-one association from imported data item'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
                 .addReferencePropertyMapping("bonusCard", "cardNumber", "bonusCardNumber", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
@@ -127,19 +126,19 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
         importedDataItem.addRawValue("customerName", "John Dow")
         importedDataItem.addRawValue("bonusCardNumber", "12345-6789")
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.bonusCard == null
     }
 
     def 'test set existing one-to-one association from imported data item'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
                 .addReferencePropertyMapping("bonusCard", "cardNumber", "bonusCardNumber", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
@@ -151,12 +150,12 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
         bonusCard.cardNumber = '12345-6789'
         bonusCard = dataManager.save(bonusCard)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.bonusCard != null
         customer.bonusCard == bonusCard
@@ -164,11 +163,10 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
 
     def 'test set existing existing one-to-one association from separate imported object'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("bonusCard")
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("bonusCard", ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .withDataFieldName("bonusCard")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .addSimplePropertyMapping("cardNumber", "cardNumber")
                         .withLookupPropertyNames('cardNumber')
                         .build())
@@ -182,12 +180,12 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
         bonusCard.cardNumber = '12345-67890'
         bonusCard = dataManager.save(bonusCard)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.bonusCard != null
         customer.bonusCard == bonusCard
@@ -195,14 +193,13 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
 
     def 'test creation of nested one-to-one association from imported data item'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("orderNumber", "orderNum")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("paymentDetails")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("paymentDetails", ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping("paymentType", "paymentType")
                         .addSimplePropertyMapping("date", "paymentDate")
                         .addSimplePropertyMapping("bonusAmount", "bonusAmount")
-                        .addReferencePropertyMapping("bonusCard", "cardNumber", "bonusCardNumber", ReferenceImportPolicy.CREATE_IF_MISSING)
+                        .addReferencePropertyMapping("bonusCard", "bonusCardNumber","cardNumber",  ReferenceImportPolicy.CREATE_IF_MISSING)
                         .build())
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
@@ -213,27 +210,26 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
         importedDataItem.addRawValue("bonusCardNumber", "12345-67890")
         importedDataItem.addRawValue("bonusAmount", "0")
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
+        entityInfo.entity == order
         checkOrder(order, "#001", null, null)
         checkPaymentDetails(order.paymentDetails, '12/06/2021 12:00', PaymentType.CASH, '12345-67890', BigDecimal.ZERO)
     }
 
     def 'test creation of nested one-to-one association from separate imported object'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Order, "order")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("orderNumber", "orderNum")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("paymentDetails")
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("paymentDetails", ReferenceImportPolicy.CREATE)
                         .withDataFieldName('paymentDetails')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping("paymentType", "paymentType")
                         .addSimplePropertyMapping("date", "paymentDate")
                         .addSimplePropertyMapping("bonusAmount", "bonusAmount")
-                        .addReferencePropertyMapping("bonusCard", "cardNumber", "bonusCardNumber", ReferenceImportPolicy.CREATE)
+                        .addReferencePropertyMapping("bonusCard", "bonusCardNumber", "cardNumber", ReferenceImportPolicy.CREATE)
                         .build())
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
@@ -245,12 +241,12 @@ class OneToOneAssociationCreationTest extends DataImportSpec {
         importedDataItem.addRawValue("bonusCardNumber", "12345-67890")
         importedDataItem.addRawValue("bonusAmount", "0")
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def order = dataManager.create(Order)
-        def entityFillingInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
+        def entityInfo = entityPopulator.populateProperties(order, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == order
+        entityInfo.entity == order
         checkOrder(order, "#001", null, null)
         checkPaymentDetails(order.paymentDetails, '12/06/2021 12:00', PaymentType.CASH, '12345-67890', BigDecimal.ZERO)
     }

@@ -16,19 +16,25 @@
 
 package data_importer
 
+import com.google.common.collect.ImmutableMap
 import io.jmix.core.FetchPlan
 import io.jmix.core.Resources
 import io.jmix.dataimport.DataImporter
+import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.configuration.ImportConfigurationBuilder
 import io.jmix.dataimport.configuration.DuplicateEntityPolicy
 import io.jmix.dataimport.configuration.ImportTransactionStrategy
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
 import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping
 import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
+import io.jmix.dataimport.result.EntityImportError
 import io.jmix.dataimport.result.EntityImportErrorType
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
 import test_support.entity.*
+
+import java.nio.charset.StandardCharsets
 
 class ImportInMultipleTransactionsTest extends DataImportSpec {
     @Autowired
@@ -38,11 +44,10 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
 
     def 'test successful import without references'() {
         given:
-        def importConfig = new ImportConfigurationBuilder(Product, "import-product")
+        def importConfig = ImportConfiguration.builder(Product, InputDataFormat.XML)
                 .addSimplePropertyMapping("name", "name")
                 .addSimplePropertyMapping("price", "price")
                 .addSimplePropertyMapping("special", "special")
-                .withInputDataFormat("xml")
                 .withBooleanFormats("Yes", "No")
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
                 .build()
@@ -56,27 +61,22 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         result.success
         result.importedEntityIds.size() == 1
 
-        def importedProduct = dataManager.load(Product)
-                .id(result.importedEntityIds.get(0))
-                .fetchPlan(FetchPlan.LOCAL)
-                .one() as Product
+        def importedProduct = loadEntity(Product, result.importedEntityIds[0], FetchPlan.LOCAL) as Product
         checkProduct(importedProduct, 'Cotek Battery Charger', 30.1, false)
     }
 
     def 'test import with existing and new one-to-one references'() {
         given:
-        def importConfig = new ImportConfigurationBuilder(Customer, "import-customer-with-bonus-cards")
+        def importConfig = ImportConfiguration.builder(Customer, InputDataFormat.JSON)
                 .addSimplePropertyMapping("name", "name")
                 .addSimplePropertyMapping("email", "email")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('bonusCard')
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('bonusCard', ReferenceImportPolicy.CREATE_IF_MISSING)
                         .withDataFieldName('bonusCard')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE_IF_MISSING)
                         .addSimplePropertyMapping("cardNumber", "number")
                         .addSimplePropertyMapping("isActive", "isActive")
                         .addSimplePropertyMapping("balance", "balance")
                         .lookupByAllSimpleProperties()
                         .build())
-                .withInputDataFormat("json")
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
                 .build()
 
@@ -95,70 +95,65 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         result.success
         result.importedEntityIds.size() == 2
 
-        def customer1 = loadEntity(Customer, result.importedEntityIds.get(0), "customer-with-bonus-card") as Customer
+        def customer1 = loadEntity(Customer, result.importedEntityIds[0], "customer-with-bonus-card") as Customer
         checkBonusCard(customer1.bonusCard, '12345-67890', true, 100 as BigDecimal)
 
-        def customer2 = loadEntity(Customer, result.importedEntityIds.get(1), "customer-with-bonus-card") as Customer
+        def customer2 = loadEntity(Customer, result.importedEntityIds[1], "customer-with-bonus-card") as Customer
         customer2.bonusCard != null
         customer2.bonusCard == bonusCard
     }
 
     def 'test import with existing and new many-to-one reference'() {
         given:
-        def importConfig = new ImportConfigurationBuilder(Order, "import-orders")
+        def importConfig = ImportConfiguration.builder(Order, InputDataFormat.CSV)
                 .addSimplePropertyMapping("orderNumber", "Order Num")
                 .addSimplePropertyMapping("date", "Order Date")
                 .addSimplePropertyMapping("amount", "Order Amount")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE_IF_MISSING)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.CREATE_IF_MISSING)
                         .addSimplePropertyMapping("name", "Customer Name")
                         .addSimplePropertyMapping("email", "Customer Email")
                         .lookupByAllSimpleProperties()
                         .build())
-                .withInputDataFormat("csv")
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
                 .build()
 
-        def csvContent = resources.getResourceAsStream("/test_support/input_data_files/csv/orders.csv")
+        def csvContent = resources.getResourceAsString("/test_support/input_data_files/csv/orders.csv")
 
         def customer = dataManager.create(Customer)
         customer.name = 'John Dow'
         customer = dataManager.save(customer)
 
         when: 'data imported'
-        def result = dataImporter.importData(importConfig, csvContent)
+        def result = dataImporter.importData(importConfig, csvContent.getBytes(StandardCharsets.UTF_8))
 
         then:
         result.success
         result.importedEntityIds.size() == 3
 
-        def order1 = loadEntity(Order, result.importedEntityIds.get(0), "order-with-customer") as Order
+        def order1 = loadEntity(Order, result.importedEntityIds[0], "order-with-customer") as Order
         order1.customer != null
         order1.customer == customer
 
-        def order2 = loadEntity(Order, result.importedEntityIds.get(1), "order-with-customer") as Order
+        def order2 = loadEntity(Order, result.importedEntityIds[1], "order-with-customer") as Order
         order2.customer != null
         order2.customer == customer
 
-        def order3 = loadEntity(Order, result.importedEntityIds.get(2), "order-with-customer") as Order
+        def order3 = loadEntity(Order, result.importedEntityIds[2], "order-with-customer") as Order
         order3.customer != null
         checkCustomer(order3.customer, 'Tom Smith', 't.smith@mail.com', null)
     }
 
-    def 'test import with one-to-many association'() {
+    def 'test import with one-to-many composition'() {
         given:
-        def importConfig = new ImportConfigurationBuilder(Customer, "import-customers")
+        def importConfig = ImportConfiguration.builder(Customer, InputDataFormat.CSV)
                 .addSimplePropertyMapping("name", "Customer Name")
                 .addSimplePropertyMapping("email", "Customer Email")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('orders')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('orders', ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping("orderNumber", "Order Num")
                         .addSimplePropertyMapping("date", "Order Date")
                         .addSimplePropertyMapping("amount", "Order Amount")
-                        .lookupByAllSimpleProperties()
                         .build())
-                .withInputDataFormat("csv")
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
                 .build()
@@ -172,56 +167,50 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         result.success
         result.importedEntityIds.size() == 3
 
-        def customer1 = loadEntity(Customer, result.importedEntityIds.get(0), "customer-with-orders") as Customer
+        def customer1 = loadEntity(Customer, result.importedEntityIds[0], "customer-with-orders") as Customer
         customer1.orders != null
         customer1.orders.size() == 1
-        checkOrder(customer1.orders.get(0), '#123', '12/12/2020 12:30', null)
+        checkOrder(customer1.orders[0], '#123', '12/12/2020 12:30', null)
 
-        def customer2 = loadEntity(Customer, result.importedEntityIds.get(1), "customer-with-orders") as Customer
+        def customer2 = loadEntity(Customer, result.importedEntityIds[1], "customer-with-orders") as Customer
         customer2.orders != null
         customer2.orders.size() == 1
-        checkOrder(customer2.orders.get(0), '#4567', '03/05/2021 14:00', null)
+        checkOrder(customer2.orders[0], '#4567', '03/05/2021 14:00', null)
 
-        def customer3 = loadEntity(Customer, result.importedEntityIds.get(2), "customer-with-orders") as Customer
+        def customer3 = loadEntity(Customer, result.importedEntityIds[2], "customer-with-orders") as Customer
         customer3.orders != null
         customer3.orders.size() == 1
-        checkOrder(customer3.orders.get(0), '#237', '02/04/2021 10:00', null)
+        checkOrder(customer3.orders[0], '#237', '02/04/2021 10:00', null)
     }
 
     def 'test import with nested references from Excel'() {
         given:
-        def importConfig = new ImportConfigurationBuilder(Order, "import-order")
+        def importConfig = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("orderNumber", "Order Number")
                 .addSimplePropertyMapping("date", "Order Date")
                 .addSimplePropertyMapping("amount", "Order Amount")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer') //mapping for customer
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE_IF_MISSING)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.CREATE_IF_MISSING) //mapping for customer
                         .addSimplePropertyMapping('name', "Customer Name")
                         .addSimplePropertyMapping("email", "Customer Email")
                         .lookupByAllSimpleProperties()
                         .build())
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('paymentDetails')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('paymentDetails', ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping("date", "Payment Date")
-                        .addCustomPropertyMapping("paymentType", "Payment Type", customValueContext -> {
-                            String paymentType = customValueContext.getRawValue() as String
+                        .addCustomPropertyMapping("paymentType", customMappingContext -> {
+                            String paymentType = customMappingContext.rawValues.get("Payment Type") as String
                             paymentType = paymentType.replace("\\s+", "_")
-                            return PaymentType.fromId(paymentType);
+                            return PaymentType.fromId(paymentType)
                         })
                         .addSimplePropertyMapping("bonusAmount", "Bonus Amount")
-                        .addPropertyMapping(ReferencePropertyMapping.byEntityPropertyName('bonusCard')
-                                .withDataFieldName('Bonus Card Number')
-                                .withLookupPropertyName('cardNumber')
-                                .withReferenceImportPolicy(ReferenceImportPolicy.IGNORE_IF_MISSING)
-                                .build())
+                        .addPropertyMapping(new ReferencePropertyMapping('bonusCard')
+                                .setDataFieldName('Bonus Card Number')
+                                .setLookupPropertyName('cardNumber'))
                         .build())
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("lines")
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE) //mapping for order lines
-                        .addReferencePropertyMapping("product", "name", "Product Name",
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE) //mapping for order lines
+                        .addReferencePropertyMapping("product", "Product Name", "name",
                                 ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .addSimplePropertyMapping("quantity", "Quantity")
                         .build())
-                .withInputDataFormat("xlsx")
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
                 .addUniqueEntityConfiguration(DuplicateEntityPolicy.UPDATE, "orderNumber", "date", "amount")
                 .withDateFormat("dd/MM/yyyy HH:mm")
@@ -234,10 +223,9 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
 
         then:
         result.success
-        result.numOfProcessedEntities == 4
         result.importedEntityIds.size() == 3
 
-        def order1 = loadEntity(Order, result.importedEntityIds.get(0), "order-full") as Order
+        def order1 = loadEntity(Order, result.importedEntityIds[0], "order-full") as Order
         order1.customer != null
         checkOrder(order1, '#001', '12/02/2021 12:00', 50.5)
         checkCustomer(order1.customer, 'Mike Spencer', 'm.spencer@mail.com', null)
@@ -246,32 +234,30 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         order1.lines != null
         order1.lines.size() == 2
         order1.lines.sort(orderLine -> orderLine.quantity)
-        checkOrderLine(order1.lines.get(0), 'Outback Power Nano-Carbon Battery 12V', 4)
-        checkOrderLine(order1.lines.get(1), 'Fullriver Sealed Battery 6V', 5)
+        checkOrderLine(order1.lines[0], 'Outback Power Nano-Carbon Battery 12V', 4)
+        checkOrderLine(order1.lines[1], 'Fullriver Sealed Battery 6V', 5)
 
-        def order2 = loadEntity(Order, result.importedEntityIds.get(1), "order-full") as Order
+        def order2 = loadEntity(Order, result.importedEntityIds[1], "order-full") as Order
         checkOrder(order2, '#123', '23/03/2021 18:00', 6.25)
         checkCustomer(order2.customer, 'Tom Smith', 't.smith@mail.com', null)
         checkPaymentDetails(order2.paymentDetails, '23/03/2021 18:00', PaymentType.CREDIT_CARD, null, null)
 
         order2.lines != null
         order2.lines.size() == 1
-        checkOrderLine(order2.lines.get(0), 'Outback Power Nano-Carbon Battery 12V', 1)
+        checkOrderLine(order2.lines[0], 'Outback Power Nano-Carbon Battery 12V', 1)
     }
 
     def 'test pre-import predicate'() {
         given:
-        def importConfig = new ImportConfigurationBuilder(Order, "import-order")
+        def importConfig = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("orderNumber", "Order Num")
                 .addSimplePropertyMapping("date", "Order Date")
                 .addSimplePropertyMapping("amount", "Order Amount")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .addSimplePropertyMapping('name', 'Customer Name')
                         .addSimplePropertyMapping('email', 'Customer Email')
                         .lookupByAllSimpleProperties()
                         .build())
-                .withInputDataFormat("xlsx")
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
                 .withDateFormat("dd/MM/yyyy HH:mm")
                 .withPreImportPredicate(entityExtractionResult -> {
@@ -287,19 +273,17 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
 
         then:
         result.success
-        result.numOfProcessedEntities == 3
         result.importedEntityIds.size() == 0
         result.failedEntities.size() == 3
-        result.failedEntities.get(0).errorType == EntityImportErrorType.VALIDATION
-        result.failedEntities.get(1).errorType == EntityImportErrorType.VALIDATION
-        result.failedEntities.get(2).errorType == EntityImportErrorType.VALIDATION
+        result.failedEntities[0].errorType == EntityImportErrorType.VALIDATION
+        result.failedEntities[1].errorType == EntityImportErrorType.VALIDATION
+        result.failedEntities[2].errorType == EntityImportErrorType.VALIDATION
     }
 
     def 'test entity validation exception'() {
         given:
-        def importConfig = new ImportConfigurationBuilder(OrderLine, "import-lines")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('order')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE_IF_MISSING)
+        def importConfig = ImportConfiguration.builder(OrderLine, InputDataFormat.XML)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('order', ReferenceImportPolicy.CREATE_IF_MISSING)
                         .addSimplePropertyMapping("orderNumber", "orderNumber")
                         .addSimplePropertyMapping('amount', 'orderAmount')
                         .addSimplePropertyMapping('date', 'orderDate')
@@ -308,7 +292,6 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
                 .addReferencePropertyMapping('product', 'name', "productName", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .addSimplePropertyMapping("quantity", "quantity")
                 .withDateFormat('dd/MM/yyyy HH:mm')
-                .withInputDataFormat("xml")
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
                 .build()
         InputStream xmlContent = resources.getResourceAsStream("/test_support/input_data_files/xml/order_lines.xml")
@@ -318,18 +301,52 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
 
         then:
         !importResult.success
-        importResult.numOfProcessedEntities == 2
         importResult.importedEntityIds.size() == 1
         importResult.failedEntities.size() == 1
 
-        def orderLine = loadEntity(OrderLine, importResult.importedEntityIds.get(0), 'orderLine-full') as OrderLine
+        def orderLine = loadEntity(OrderLine, importResult.importedEntityIds[0], 'orderLine-full') as OrderLine
         checkOrderLine(orderLine, 'Outback Power Nano-Carbon Battery 12V', 4)
         checkOrder(orderLine.order, '#002', '28/06/2021 12:00', 25)
 
-        def entityImportError = importResult.failedEntities.get(0)
+        def entityImportError = importResult.failedEntities[0]
         entityImportError.errorType == EntityImportErrorType.VALIDATION
         def failedOrderLine = entityImportError.entity as OrderLine
         checkOrderLine(failedOrderLine, null, 1)
         checkOrder(failedOrderLine.order, '#001', '24/06/2021 10:00', 210.55)
+    }
+
+    def 'test failed import with FAIL_IF_MISSING import policy'() {
+        given:
+        def importConfig = ImportConfiguration.builder(OrderLine, InputDataFormat.XML)
+                .addSimplePropertyMapping("quantity", "quantity")
+                .addReferencePropertyMapping("product", "name", "productName", ReferenceImportPolicy.FAIL_IF_MISSING)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('order', ReferenceImportPolicy.CREATE)
+                        .addSimplePropertyMapping('date', 'orderDate')
+                        .addSimplePropertyMapping('orderNumber', 'orderNumber')
+                        .addSimplePropertyMapping('amount', 'orderAmount')
+                        .build())
+                .withDateFormat('dd/MM/yyyy HH:mm')
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
+                .build()
+
+        def xmlContent = resources.getResourceAsStream("/test_support/input_data_files/xml/order_lines.xml")
+
+        when: 'data imported'
+        def result = dataImporter.importData(importConfig, xmlContent)
+
+        then:
+        !result.success
+        result.failedEntities.size() == 1
+        result.importedEntityIds.size() == 1
+
+        def importedOrderLine = dataManager.load(OrderLine)
+                .id(result.importedEntityIds[0])
+                .fetchPlan(FetchPlan.LOCAL)
+                .one() as OrderLine
+        checkOrderLine(importedOrderLine, 'Outback Power Nano-Carbon Battery 12V', 4)
+
+        def failedOrderLineResult = result.failedEntities[0]
+        failedOrderLineResult.errorMessage == 'Existing value not found for property [product] in entity [sales_OrderLine]'
+        failedOrderLineResult.errorType == EntityImportErrorType.DATA_BINDING
     }
 }

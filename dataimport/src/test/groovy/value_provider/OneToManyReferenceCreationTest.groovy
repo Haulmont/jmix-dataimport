@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package entity_populator
+package value_provider
 
 
 import io.jmix.core.common.util.ParamsMap
+import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
 import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
-import io.jmix.dataimport.configuration.ImportConfigurationBuilder
 import io.jmix.dataimport.extractor.data.ImportedDataItem
 import io.jmix.dataimport.extractor.data.ImportedObject
 import io.jmix.dataimport.extractor.data.ImportedObjectList
@@ -29,17 +30,16 @@ import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
 import test_support.entity.Customer
 
-class OneToManyAssociationCreationTest extends DataImportSpec {
+class OneToManyReferenceCreationTest extends DataImportSpec {
 
     @Autowired
-    protected EntityPropertiesPopulator entityPopulator
+    protected EntityPropertiesPopulator entityPropertiesPopulator
 
     def 'test creation using data from imported object list'() {
         given:
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("orders")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
                         .withDataFieldName('orders')
-                        .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping("orderNumber", "orderNumber")
                         .addSimplePropertyMapping("amount", "amount")
                         .addSimplePropertyMapping("date", "date")
@@ -53,40 +53,36 @@ class OneToManyAssociationCreationTest extends DataImportSpec {
                 .addImportedObject(createOrderObject('#002', '13', '25/06/2021 17:00'))
         importedDataItem.addRawValue("orders", importedObjectList)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
-        entityFillingInfo.createdReferences.size() == 2
+        entityInfo.entity == customer
+        entityInfo.createdReferences.size() == 2
         customer.orders.size() == 2
-        checkOrder(customer.orders.get(0), '#001', '12/06/2021 12:00', 55.5)
-        checkOrder(customer.orders.get(1), '#002', '25/06/2021 17:00', 13)
+        checkOrder(customer.orders[0], '#001', '12/06/2021 12:00', 55.5)
+        checkOrder(customer.orders[1], '#002', '25/06/2021 17:00', 13)
     }
 
     def 'test creation of nested one-to-many associations if each one has own imported object list'() {
         given:
-        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines")
+        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)
                 .withDataFieldName("lines")
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", 'name', 'productName', ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping("product", 'productName', 'name', ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
 
-        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders")
-                .withDataFieldName('orders')
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
-                .addSimplePropertyMapping("orderNumber", "orderNumber")
-                .addSimplePropertyMapping("amount", "amount")
-                .addSimplePropertyMapping("date", "date")
-                .addPropertyMapping(orderLinesPropertyMapping)
-                .build()
-
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "name")
-                .addPropertyMapping(ordersPropertyMapping)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
+                        .withDataFieldName('orders')
+                        .addSimplePropertyMapping("orderNumber", "orderNumber")
+                        .addSimplePropertyMapping("amount", "amount")
+                        .addSimplePropertyMapping("date", "date")
+                        .addPropertyMapping(orderLinesPropertyMapping)
+                        .build())
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
 
@@ -96,33 +92,31 @@ class OneToManyAssociationCreationTest extends DataImportSpec {
         importedDataItem.setRawValues(ParamsMap.of("name", "John Dow",
                 "orders", importedObjectList))
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.orders.size() == 1
 
 
-        def firstOrder = customer.orders.get(0)
+        def firstOrder = customer.orders[0]
         checkOrder(firstOrder, '#001', '12/06/2021 12:00', 20)
         firstOrder.lines.size() == 1
-        checkOrderLine(firstOrder.lines.get(0), 'Outback Power Nano-Carbon Battery 12V', 2)
+        checkOrderLine(firstOrder.lines[0], 'Outback Power Nano-Carbon Battery 12V', 2)
     }
 
     def 'test creation of nested one-to-many associations without separate imported object list'() {
-        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines")
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", "name", "productName", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
 
-        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders")
+        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
                 .withDataFieldName('orderLines')
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("orderNumber", "orderNum")
                 .addSimplePropertyMapping("amount", "orderAmount")
                 .addSimplePropertyMapping("date", "orderDate")
@@ -130,7 +124,7 @@ class OneToManyAssociationCreationTest extends DataImportSpec {
                 .build()
 
 
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "name")
                 .addPropertyMapping(ordersPropertyMapping)
                 .withDateFormat("dd/MM/yyyy hh:mm")
@@ -152,43 +146,41 @@ class OneToManyAssociationCreationTest extends DataImportSpec {
                         "quantity", "4")))
         importedDataItem.addRawValue("orderLines", importedObjectList)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.orders.size() == 2
 
-        def firstOrder = customer.orders.get(0)
+        def firstOrder = customer.orders[0]
         checkOrder(firstOrder, '#001', '12/06/2021 12:00', 30)
         firstOrder.lines.size() == 1
-        checkOrderLine(firstOrder.lines.get(0), 'Outback Power Nano-Carbon Battery 12V', 2)
+        checkOrderLine(firstOrder.lines[0], 'Outback Power Nano-Carbon Battery 12V', 2)
 
 
-        def secondOrder = customer.orders.get(1)
+        def secondOrder = customer.orders[1]
         checkOrder(secondOrder, '#002', '25/05/2021 12:00', 20)
         secondOrder.lines.size() == 1
-        checkOrderLine(secondOrder.lines.get(0), 'Fullriver Sealed Battery 6V', 4)
+        checkOrderLine(secondOrder.lines[0], 'Fullriver Sealed Battery 6V', 4)
     }
 
     def 'test creation of nested one-to-many associations if all data stores in imported data item'() {
-        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines")
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", "name", "productName", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
 
-        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders")
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("orderNumber", "orderNum")
                 .addSimplePropertyMapping("amount", "orderAmount")
                 .addSimplePropertyMapping("date", "orderDate")
                 .addPropertyMapping(orderLinesPropertyMapping)
                 .build()
 
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "name")
                 .addPropertyMapping(ordersPropertyMapping)
                 .withDateFormat("dd/MM/yyyy hh:mm")
@@ -202,33 +194,31 @@ class OneToManyAssociationCreationTest extends DataImportSpec {
         importedDataItem.addRawValue("productName", "Outback Power Nano-Carbon Battery 12V")
         importedDataItem.addRawValue("quantity", "2")
 
-        when: 'entity populated'
+        when: 'entity properties populated'
 
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.orders.size() == 1
 
-        def firstOrder = customer.orders.get(0)
+        def firstOrder = customer.orders[0]
         checkOrder(firstOrder, '#001', '12/06/2021 12:00', 20)
         firstOrder.lines.size() == 1
-        checkOrderLine(firstOrder.lines.get(0), 'Outback Power Nano-Carbon Battery 12V', 2)
+        checkOrderLine(firstOrder.lines[0], 'Outback Power Nano-Carbon Battery 12V', 2)
     }
 
     def 'test duplicates in one-to-many association for imported entity'() {
         given:
-        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines")
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
+        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", "name", "productName", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
 
-        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders")
+        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
                 .withDataFieldName('orderLines')
-                .withReferenceImportPolicy(ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("orderNumber", "orderNum")
                 .addSimplePropertyMapping("amount", "orderAmount")
                 .addSimplePropertyMapping("date", "orderDate")
@@ -237,7 +227,7 @@ class OneToManyAssociationCreationTest extends DataImportSpec {
                 .build()
 
 
-        def configuration = new ImportConfigurationBuilder(Customer, "customer")
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "name")
                 .addPropertyMapping(ordersPropertyMapping)
                 .withDateFormat("dd/MM/yyyy hh:mm")
@@ -259,20 +249,20 @@ class OneToManyAssociationCreationTest extends DataImportSpec {
                         "quantity", "4")))
         importedDataItem.addRawValue("orderLines", importedObjectList)
 
-        when: 'entity populated'
+        when: 'entity properties populated'
         def customer = dataManager.create(Customer)
-        def entityFillingInfo = entityPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(customer, configuration, importedDataItem)
 
         then:
-        entityFillingInfo.entity == customer
+        entityInfo.entity == customer
         checkCustomer(customer, 'John Dow', null, null)
         customer.orders.size() == 1
 
-        def order = customer.orders.get(0)
+        def order = customer.orders[0]
         checkOrder(order, '#001', '12/06/2021 12:00', 50)
         order.lines.size() == 2
-        checkOrderLine(order.lines.get(0), 'Outback Power Nano-Carbon Battery 12V', 2)
-        checkOrderLine(order.lines.get(1), 'Fullriver Sealed Battery 6V', 4)
+        checkOrderLine(order.lines[0], 'Outback Power Nano-Carbon Battery 12V', 2)
+        checkOrderLine(order.lines[1], 'Fullriver Sealed Battery 6V', 4)
     }
 
     protected ImportedObject createOrderObject(String orderNum, String amount, String date) {

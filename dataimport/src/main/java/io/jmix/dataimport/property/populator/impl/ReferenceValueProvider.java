@@ -23,14 +23,14 @@ import io.jmix.core.metamodel.model.MetaClass;
 import io.jmix.core.metamodel.model.MetaProperty;
 import io.jmix.core.metamodel.model.Range;
 import io.jmix.dataimport.DuplicateEntityManager;
-import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
+import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy;
+import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
+import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
 import io.jmix.dataimport.exception.ImportException;
 import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
-import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
-import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy;
-import io.jmix.dataimport.property.populator.PropertyMappingUtils;
 import io.jmix.dataimport.property.populator.PropertyMappingContext;
+import io.jmix.dataimport.property.populator.PropertyMappingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,7 +65,7 @@ public class ReferenceValueProvider {
     public Object getSingleEntity(PropertyMappingContext context, @Nullable List<Object> createdReferences) {
         MetaProperty referenceMetaProperty = context.getMetaProperty();
         if (metadataTools.isEmbedded(referenceMetaProperty)) {
-            return processReferenceMapping(context, null);
+            return processEmbeddedReferenceMapping(context);
         }
 
         Range.Cardinality cardinality = referenceMetaProperty.getRange().getCardinality();
@@ -92,6 +92,16 @@ public class ReferenceValueProvider {
             } else if (referenceImportPolicy == ReferenceImportPolicy.IGNORE_IF_MISSING) {
                 logIgnoredReference(context);
             }
+        }
+        return null;
+    }
+
+    @Nullable
+    protected Object processEmbeddedReferenceMapping(PropertyMappingContext context) {
+        PropertyMapping referenceMapping = context.getPropertyMapping();
+        ReferenceImportPolicy referenceImportPolicy = getReferenceImportPolicy(referenceMapping);
+        if (referenceImportPolicy == ReferenceImportPolicy.CREATE) {
+            return referenceCreator.createEmbeddedEntity(context);
         }
         return null;
     }
@@ -142,10 +152,6 @@ public class ReferenceValueProvider {
     protected Object loadEntity(PropertyMappingContext context) {
         MetaProperty referenceMetaProperty = context.getMetaProperty();
         MetaClass referenceMetaClass = referenceMetaProperty.getRange().asClass();
-
-        if (metadataTools.isEmbedded(referenceMetaProperty)) {
-            return null;
-        }
 
         Map<String, Object> propertyValues = propertyMappingUtils.getPropertyValues(context);
 

@@ -16,8 +16,10 @@
 
 package io.jmix.dataimport.property.populator.impl;
 
+import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.configuration.mapping.CustomPropertyMapping;
-import io.jmix.dataimport.property.populator.PropertyMappingContext;
+import io.jmix.dataimport.extractor.data.RawValuesSource;
+import io.jmix.dataimport.property.populator.CustomMappingContext;
 import org.springframework.stereotype.Component;
 
 import java.util.function.Function;
@@ -25,9 +27,12 @@ import java.util.function.Function;
 @Component("datimp_CustomValueProvider")
 public class CustomValueProvider {
 
-    public Object getValue(PropertyMappingContext mappingContext) {
-        CustomPropertyMapping propertyMapping = (CustomPropertyMapping) mappingContext.getPropertyMapping();
-        Function<PropertyMappingContext, Object> customValueFunction = propertyMapping.getCustomValueFunction();
-        return customValueFunction.apply(mappingContext);
+    public Object getValue(CustomPropertyMapping propertyMapping,
+                           ImportConfiguration importConfiguration,
+                           RawValuesSource rawValuesSource) {
+        Function<CustomMappingContext, Object> customValueFunction = propertyMapping.getCustomValueFunction();
+        return customValueFunction.apply(new CustomMappingContext()
+                .setRawValues(rawValuesSource.getRawValues())
+                .setImportConfiguration(importConfiguration));
     }
 }

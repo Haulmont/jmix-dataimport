@@ -16,17 +16,16 @@
 
 package io.jmix.dataimport.property.populator.impl;
 
-import io.jmix.core.*;
+import io.jmix.core.EntityStates;
+import io.jmix.core.Metadata;
 import io.jmix.core.entity.EntityValues;
-import io.jmix.dataimport.extractor.data.RawValuesSource;
-import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.configuration.ImportConfiguration;
-import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
-
-import io.jmix.dataimport.property.populator.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
+import io.jmix.dataimport.extractor.data.ImportedDataItem;
+import io.jmix.dataimport.extractor.data.RawValuesSource;
+import io.jmix.dataimport.property.populator.EntityInfo;
+import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,8 +37,6 @@ import java.util.Map;
 
 @Component("datimp_EntityPropertiesPopulator")
 public class EntityPropertiesPopulatorImpl implements EntityPropertiesPopulator {
-    public static final Logger log = LoggerFactory.getLogger(EntityPropertiesPopulator.class);
-
     @Autowired
     protected Metadata metadata;
     @Autowired

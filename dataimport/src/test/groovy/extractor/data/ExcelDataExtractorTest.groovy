@@ -18,6 +18,7 @@ package extractor.data
 
 
 import io.jmix.core.Resources
+import io.jmix.dataimport.InputDataFormat
 import io.jmix.dataimport.extractor.data.impl.ExcelDataExtractor
 import io.jmix.dataimport.configuration.ImportConfiguration
 import org.apache.commons.io.IOUtils
@@ -36,57 +37,57 @@ class ExcelDataExtractorTest extends DataImportSpec {
         given:
         def inputStream = resources.getResourceAsStream("test_support/input_data_files/xlsx/products.xlsx")
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-excel");
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, InputDataFormat.XLSX);
 
         when: 'imported data extracted'
-        def importedData = excelDataExtractor.extract(inputStream, importConfiguration)
+        def importedData = excelDataExtractor.extract(importConfiguration, inputStream)
 
         then:
         importedData.dataFieldNames.size() == 3
         importedData.dataFieldNames == ['Product Name', 'Special', 'Price']
 
         importedData.items.size() == 2
-        def firstProduct = importedData.items.get(0)
+        def firstProduct = importedData.items[0]
         firstProduct.itemIndex == 1
         firstProduct.rawValues.size() == 3
-        firstProduct.getRawValue( 'Product Name') == 'Outback Power Nano-Carbon Battery 12V'
-        firstProduct.getRawValue( 'Special') == 'Yes'
-        firstProduct.getRawValue( 'Price') == '6.25'
+        firstProduct.getRawValue('Product Name') == 'Outback Power Nano-Carbon Battery 12V'
+        firstProduct.getRawValue('Special') == 'Yes'
+        firstProduct.getRawValue('Price') == '6.25'
 
-        def secondProduct = importedData.items.get(1)
+        def secondProduct = importedData.items[1]
         secondProduct.itemIndex == 2
         secondProduct.rawValues.size() == 3
-        secondProduct.getRawValue( 'Product Name') == 'Fullriver Sealed Battery 6V'
-        secondProduct.getRawValue( 'Special') == 'No'
-        secondProduct.getRawValue( 'Price') == '5.10'
+        secondProduct.getRawValue('Product Name') == 'Fullriver Sealed Battery 6V'
+        secondProduct.getRawValue('Special') == 'No'
+        secondProduct.getRawValue('Price') == '5.10'
     }
 
     def "test imported data from byte array"() {
         given:
         def inputBytes = IOUtils.toByteArray(resources.getResourceAsStream("test_support/input_data_files/xlsx/products.xlsx"))
 
-        ImportConfiguration importConfiguration = new ImportConfiguration(Product, "products-from-excel")
+        ImportConfiguration importConfiguration = new ImportConfiguration(Product, InputDataFormat.XLSX)
 
         when: 'imported data extracted'
-        def importedData = excelDataExtractor.extract(inputBytes, importConfiguration)
+        def importedData = excelDataExtractor.extract(importConfiguration, inputBytes)
 
         then:
         importedData.dataFieldNames.size() == 3
         importedData.dataFieldNames == ['Product Name', 'Special', 'Price']
 
         importedData.items.size() == 2
-        def firstProduct = importedData.items.get(0)
+        def firstProduct = importedData.items[0]
         firstProduct.itemIndex == 1
         firstProduct.rawValues.size() == 3
-        firstProduct.getRawValue( 'Product Name') == 'Outback Power Nano-Carbon Battery 12V'
-        firstProduct.getRawValue( 'Special') == 'Yes'
-        firstProduct.getRawValue( 'Price') == '6.25'
+        firstProduct.getRawValue('Product Name') == 'Outback Power Nano-Carbon Battery 12V'
+        firstProduct.getRawValue('Special') == 'Yes'
+        firstProduct.getRawValue('Price') == '6.25'
 
-        def secondProduct = importedData.items.get(1)
+        def secondProduct = importedData.items[1]
         secondProduct.itemIndex == 2
         secondProduct.rawValues.size() == 3
-        secondProduct.getRawValue( 'Product Name') == 'Fullriver Sealed Battery 6V'
-        secondProduct.getRawValue( 'Special') == 'No'
-        secondProduct.getRawValue( 'Price') == '5.10'
+        secondProduct.getRawValue('Product Name') == 'Fullriver Sealed Battery 6V'
+        secondProduct.getRawValue('Special') == 'No'
+        secondProduct.getRawValue('Price') == '5.10'
     }
 }

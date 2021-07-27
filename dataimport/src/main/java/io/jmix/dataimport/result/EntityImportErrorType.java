@@ -16,9 +16,6 @@
 
 package io.jmix.dataimport.result;
 
-import javax.annotation.Nullable;
-
-
 public enum EntityImportErrorType {
     UNIQUE_VIOLATION("UNIQUE_VIOLATION"),
     VALIDATION("VALIDATION"),
@@ -35,15 +32,5 @@ public enum EntityImportErrorType {
 
     public String getId() {
         return id;
-    }
-
-    @Nullable
-    public static EntityImportErrorType fromId(String id) {
-        for (EntityImportErrorType at : EntityImportErrorType.values()) {
-            if (at.getId().equals(id)) {
-                return at;
-            }
-        }
-        return null;
     }
 }

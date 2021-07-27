@@ -16,7 +16,7 @@
 
 package io.jmix.dataimport.configuration.mapping;
 
-import io.jmix.dataimport.property.populator.PropertyMappingContext;
+import io.jmix.dataimport.property.populator.CustomMappingContext;
 
 import java.util.function.Function;
 
@@ -26,18 +26,16 @@ import java.util.function.Function;
 public class CustomPropertyMapping implements PropertyMapping {
     protected String entityPropertyName;
     protected String dataFieldName;
-    protected Function<PropertyMappingContext, Object> customValueFunction;
+    protected Function<CustomMappingContext, Object> customValueFunction;
 
-    public CustomPropertyMapping(String entityPropertyName, String dataFieldName, Function<PropertyMappingContext, Object> customValueFunction) {
+    public CustomPropertyMapping(String entityPropertyName, String dataFieldName, Function<CustomMappingContext, Object> customValueFunction) {
         this.entityPropertyName = entityPropertyName;
         this.dataFieldName = dataFieldName;
         this.customValueFunction = customValueFunction;
     }
 
-    private CustomPropertyMapping(Builder builder) {
-        this.entityPropertyName = builder.entityPropertyName;
-        this.dataFieldName = builder.dataFieldName;
-        this.customValueFunction = builder.customValueFunction;
+    public CustomPropertyMapping(String entityPropertyName) {
+        this.entityPropertyName = entityPropertyName;
     }
 
     public String getDataFieldName() {
@@ -54,49 +52,16 @@ public class CustomPropertyMapping implements PropertyMapping {
         return this;
     }
 
-    public Function<PropertyMappingContext, Object> getCustomValueFunction() {
+    public Function<CustomMappingContext, Object> getCustomValueFunction() {
         return customValueFunction;
     }
 
-    public CustomPropertyMapping setCustomValueFunction(Function<PropertyMappingContext, Object> customValueFunction) {
+    public CustomPropertyMapping setCustomValueFunction(Function<CustomMappingContext, Object> customValueFunction) {
         this.customValueFunction = customValueFunction;
         return this;
     }
 
     public String getEntityPropertyName() {
         return entityPropertyName;
-    }
-
-    public void setEntityPropertyName(String entityPropertyName) {
-        this.entityPropertyName = entityPropertyName;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private String entityPropertyName;
-        private String dataFieldName;
-        private Function<PropertyMappingContext, Object> customValueFunction;
-
-        public Builder withEntityPropertyName(String entityPropertyName) {
-            this.entityPropertyName = entityPropertyName;
-            return this;
-        }
-
-        public Builder withDataFieldName(String dataFieldName) {
-            this.dataFieldName = dataFieldName;
-            return this;
-        }
-
-        public Builder withCustomValueFunction(Function<PropertyMappingContext, Object> customValueFunction) {
-            this.customValueFunction = customValueFunction;
-            return this;
-        }
-
-        public CustomPropertyMapping build() {
-            return new CustomPropertyMapping(this);
-        }
     }
 }

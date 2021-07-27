@@ -20,18 +20,16 @@ import io.jmix.dataimport.configuration.mapping.PropertyMapping;
 import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
 /**
  * An object that allows configuring import process of entities from JSON, XML, CSV, XLSX.
- *
  * For that, there are the following options in the import configuration:
  * <ol>
  *     <li>Entity class (required): class of the entity that should be imported.</li>
- *     <li>Code (required): code of import configuration.</li>
  *     <li>Input data format (required): xlsx, csv, json or xml.</li>
- *     <li>Name: name of import configuration.</li>
  *     <li>Property mappings: list of {@link PropertyMapping}.</li>
  *     <li>Transaction strategy: {@link ImportTransactionStrategy}. By default, each entity is imported in the separate transaction.</li>
  *     <li>Date format: date format used in the input data.</li>
@@ -42,18 +40,38 @@ import java.util.function.Predicate;
  *     <li>Input data charset: this parameter is required if CSV is input data format. Default value: UTF-8.</li>
  *     <li>Unique entity configurations: list of {@link UniqueEntityConfiguration}.</li>
  * </ol>
- *
  * <br/>
  * Import configuration can be created by constructor or by {@link ImportConfigurationBuilder}.
+ * <br/>
+ * <>Creation examples: </b>
+ * <pre>
+ * ImportConfiguration importConfiguration = ImportConfiguration.builder(Order.class, InputDataFormat.CSV)
+ *                 .addSimplePropertyMapping("orderNumber", "Order Num")
+ *                 .addSimplePropertyMapping("date", "Order Date")
+ *                 .addSimplePropertyMapping("amount", "Order Amount")
+ *                 .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("customer", ReferenceImportPolicy.CREATE_IF_MISSING)
+ *                         .addSimplePropertyMapping("name", "Customer Name")
+ *                         .addSimplePropertyMapping("email", "Customer Email")
+ *                         .lookupByAllSimpleProperties()
+ *                         .build())
+ *                 .withDateFormat("dd/MM/yyyy HH:mm")
+ *                 .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+ *                 .build();
+ *
+ *  ImportConfiguration importConfiguration = ImportConfiguration.builder(Customer.class, InputDataFormat.JSON)
+ *                 .addSimplePropertyMapping("name", "name")
+ *                 .addSimplePropertyMapping("email", "email")
+ *                 .addReferencePropertyMapping("bonusCard", "bonusCardNumber", "cardNumber", ReferenceImportPolicy.IGNORE_IF_MISSING)
+ *                 .addUniqueEntityConfiguration(DuplicateEntityPolicy.ABORT, "name", "email")
+ *                 .build();
+ * </pre>
  *
  * @see ImportConfigurationBuilder
  */
 public class ImportConfiguration {
     protected Class entityClass;
 
-    protected String name;
-    protected String code;
-    protected List<PropertyMapping> propertyMappings;
+    protected List<PropertyMapping> propertyMappings = new ArrayList<>();
 
     protected ImportTransactionStrategy transactionStrategy;
 
@@ -65,13 +83,13 @@ public class ImportConfiguration {
 
     protected String inputDataCharset = StandardCharsets.UTF_8.name();
 
-    protected List<UniqueEntityConfiguration> uniqueEntityConfigurations;
+    protected List<UniqueEntityConfiguration> uniqueEntityConfigurations = new ArrayList<>();
 
     protected Predicate<EntityExtractionResult> preImportPredicate;
 
-    public ImportConfiguration(Class entityClass, String code) {
+    public ImportConfiguration(Class entityClass, String inputDataFormat) {
         this.entityClass = entityClass;
-        this.code = code;
+        this.inputDataFormat = inputDataFormat;
     }
 
     public List<PropertyMapping> getPropertyMappings() {
@@ -85,24 +103,6 @@ public class ImportConfiguration {
 
     public ImportConfiguration addPropertyMapping(PropertyMapping propertyMapping) {
         this.propertyMappings.add(propertyMapping);
-        return this;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public ImportConfiguration setCode(String code) {
-        this.code = code;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public ImportConfiguration setName(String name) {
-        this.name = name;
         return this;
     }
 
@@ -123,11 +123,6 @@ public class ImportConfiguration {
         return inputDataFormat;
     }
 
-    public ImportConfiguration setInputDataFormat(String inputDataFormat) {
-        this.inputDataFormat = inputDataFormat;
-        return this;
-    }
-
     public String getInputDataCharset() {
         return inputDataCharset;
     }
@@ -143,6 +138,11 @@ public class ImportConfiguration {
 
     public ImportConfiguration setUniqueEntityConfigurations(List<UniqueEntityConfiguration> uniqueEntityConfigurations) {
         this.uniqueEntityConfigurations = uniqueEntityConfigurations;
+        return this;
+    }
+
+    public ImportConfiguration addUniqueEntityConfiguration(UniqueEntityConfiguration uniqueEntityConfiguration) {
+        this.uniqueEntityConfigurations.add(uniqueEntityConfiguration);
         return this;
     }
 
@@ -181,4 +181,16 @@ public class ImportConfiguration {
         this.preImportPredicate = preImportPredicate;
         return this;
     }
+
+    /**
+     * Creates an instance of {@link ImportConfigurationBuilder} for the specified entity class and import configuration code.
+     *
+     * @param entityClass     entity class
+     * @param inputDataFormat input data format
+     * @return new instance of {@link ImportConfigurationBuilder}
+     */
+    public static ImportConfigurationBuilder builder(Class entityClass, String inputDataFormat) {
+        return new ImportConfigurationBuilder(entityClass, inputDataFormat);
+    }
+
 }

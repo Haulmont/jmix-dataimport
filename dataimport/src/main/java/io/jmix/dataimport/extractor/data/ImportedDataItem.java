@@ -21,7 +21,27 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
+/**
+ * Represents a source of raw values for properties for one entity to import.
+ * <br/>
+ * Contains the following info:
+ * <ul>
+ *     <li>Item index:
+ *     <ol>
+ *         <li>CSV, XLSX - row number;</li>
+ *         <li>JSON - index of JSON object in the object array;</li>
+ *         <li>XML - sequential number of XML child element in the root element.</li>
+ *     </ol>
+ *     </li>
+ *     <li>Raw values map:
+ *     <ol>
+ *         <li>CSV, XLSX - string cell values by column names;</li>
+ *         <li>JSON - field values by field names. As a field value can be: string (for all simple fields), {@link ImportedObject} or {@link ImportedObjectList};</li>
+ *         <li>XML - tag value by tag names. As a tag value can be: string (for tags without child tags), {@link ImportedObject} or {@link ImportedObjectList}.</li>
+ *     </ol>
+ *     </li>
+ * </ul>
+ */
 public class ImportedDataItem implements RawValuesSource {
     protected Map<String, Object> rawValues = new HashMap<>();
     protected int itemIndex;

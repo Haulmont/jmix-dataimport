@@ -18,13 +18,13 @@ package io.jmix.dataimport.property.populator;
 
 import io.jmix.core.Metadata;
 import io.jmix.core.metamodel.model.MetaClass;
-import io.jmix.dataimport.extractor.data.ImportedDataItem;
-import io.jmix.dataimport.extractor.data.RawValuesSource;
 import io.jmix.dataimport.configuration.ImportConfiguration;
-import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
-import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
 import io.jmix.dataimport.configuration.mapping.CustomPropertyMapping;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
+import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
+import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
+import io.jmix.dataimport.extractor.data.ImportedDataItem;
+import io.jmix.dataimport.extractor.data.RawValuesSource;
 import io.jmix.dataimport.property.populator.impl.CustomValueProvider;
 import io.jmix.dataimport.property.populator.impl.SimplePropertyValueProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,13 +78,13 @@ public class PropertyMappingUtils {
                 .filter(propertyMapping -> !propertyMapping.isReference())
                 .forEach(propertyMapping -> {
                     Object value;
-                    PropertyMappingContext mappingContext = new PropertyMappingContext(propertyMapping)
-                            .setRawValuesSource(valuesSource)
-                            .setImportConfiguration(importConfiguration)
-                            .setOwnerEntityMetaClass(sourceEntityMetaClass);
                     if (propertyMapping instanceof CustomPropertyMapping) {
-                        value = customValueProvider.getValue(mappingContext);
+                        value = customValueProvider.getValue((CustomPropertyMapping) propertyMapping, importConfiguration, valuesSource);
                     } else {
+                        PropertyMappingContext mappingContext = new PropertyMappingContext(propertyMapping)
+                                .setRawValuesSource(valuesSource)
+                                .setImportConfiguration(importConfiguration)
+                                .setOwnerEntityMetaClass(sourceEntityMetaClass);
                         value = simplePropertyValueProvider.getValue(mappingContext);
                     }
                     propertyValues.put(propertyMapping.getEntityPropertyName(), value);

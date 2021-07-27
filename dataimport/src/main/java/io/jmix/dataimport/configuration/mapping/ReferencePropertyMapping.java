@@ -42,26 +42,13 @@ public class ReferencePropertyMapping implements PropertyMapping {
         this.referenceImportPolicy = ReferenceImportPolicy.IGNORE_IF_MISSING;
     }
 
-    public ReferencePropertyMapping(String entityPropertyName, String lookupPropertyName, String dataFieldName, ReferenceImportPolicy referenceImportPolicy) {
+    public ReferencePropertyMapping(String entityPropertyName) {
         this.entityPropertyName = entityPropertyName;
-        this.dataFieldName = dataFieldName;
-        this.lookupPropertyName = lookupPropertyName;
-        this.referenceImportPolicy = referenceImportPolicy;
-    }
-
-    private ReferencePropertyMapping(Builder builder) {
-        this.entityPropertyName = builder.entityPropertyName;
-        this.lookupPropertyName = builder.lookupPropertyName;
-        this.dataFieldName = builder.dataFieldName;
-        this.referenceImportPolicy = builder.referenceImportPolicy;
+        this.referenceImportPolicy = ReferenceImportPolicy.IGNORE_IF_MISSING;
     }
 
     public String getEntityPropertyName() {
         return entityPropertyName;
-    }
-
-    public void setEntityPropertyName(String entityPropertyName) {
-        this.entityPropertyName = entityPropertyName;
     }
 
     public String getDataFieldName() {
@@ -73,78 +60,27 @@ public class ReferencePropertyMapping implements PropertyMapping {
         return true;
     }
 
-    public void setDataFieldName(String dataFieldName) {
+    public ReferencePropertyMapping setDataFieldName(String dataFieldName) {
         this.dataFieldName = dataFieldName;
+        return this;
     }
 
     public String getLookupPropertyName() {
         return lookupPropertyName;
     }
 
-    public void setLookupPropertyName(String lookupPropertyName) {
+    public ReferencePropertyMapping setLookupPropertyName(String lookupPropertyName) {
         this.lookupPropertyName = lookupPropertyName;
+
+        return this;
     }
 
     public ReferenceImportPolicy getReferenceImportPolicy() {
         return referenceImportPolicy;
     }
 
-    public void setReferenceImportPolicy(ReferenceImportPolicy referenceImportPolicy) {
+    public ReferencePropertyMapping setReferenceImportPolicy(ReferenceImportPolicy referenceImportPolicy) {
         this.referenceImportPolicy = referenceImportPolicy;
-    }
-
-    public static Builder byEntityPropertyName(String entityPropertyName) {
-        return new Builder(entityPropertyName);
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private String entityPropertyName;
-        private String lookupPropertyName;
-        private ReferenceImportPolicy referenceImportPolicy = ReferenceImportPolicy.IGNORE_IF_MISSING;
-        private String dataFieldName;
-
-        public Builder(String entityPropertyName) {
-            this.entityPropertyName = entityPropertyName;
-        }
-
-        public Builder() {
-        }
-
-        public Builder withLookupPropertyName(String lookupPropertyName) {
-            this.lookupPropertyName = lookupPropertyName;
-            return this;
-        }
-
-        public Builder withReferenceImportPolicy(ReferenceImportPolicy referenceImportPolicy) {
-            this.referenceImportPolicy = referenceImportPolicy;
-            return this;
-        }
-
-        public Builder withDataFieldName(String dataFieldName) {
-            this.dataFieldName = dataFieldName;
-            return this;
-        }
-
-        public ReferencePropertyMapping build() {
-            validate();
-            return new ReferencePropertyMapping(this);
-        }
-
-        protected void validate() {
-            if (entityPropertyName == null) {
-                throw new IllegalArgumentException("Entity property name is not set for reference property mapping");
-            }
-            if (lookupPropertyName == null) {
-                throw new IllegalArgumentException(String.format("Lookup property is not set for reference property [%s]", entityPropertyName));
-            }
-
-            if (dataFieldName == null) {
-                throw new IllegalArgumentException(String.format("Data field is not set for reference property [%s]", entityPropertyName));
-            }
-        }
+        return this;
     }
 }
