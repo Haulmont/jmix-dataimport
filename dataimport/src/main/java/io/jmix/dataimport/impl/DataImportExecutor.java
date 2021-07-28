@@ -196,7 +196,7 @@ public class DataImportExecutor {
     }
 
     protected boolean checkPreImportPredicate(EntityExtractionResult entityExtractionResult) {
-        boolean needToImport = executePreCommitPredicateIfNecessary(entityExtractionResult);
+        boolean needToImport = executePreImportPredicateIfNecessary(entityExtractionResult);
         if (!needToImport) {
             importResult.addFailedEntity(createEntityImportErrorResult(entityExtractionResult,
                     "Entity not imported due to pre-commit predicate", EntityImportErrorType.VALIDATION));
@@ -204,13 +204,13 @@ public class DataImportExecutor {
         return needToImport;
     }
 
-    protected boolean executePreCommitPredicateIfNecessary(EntityExtractionResult result) {
+    protected boolean executePreImportPredicateIfNecessary(EntityExtractionResult result) {
         if (importConfiguration.getPreImportPredicate() != null) {
             try {
                 return importConfiguration.getPreImportPredicate().test(result);
             } catch (Exception e) {
-                log.error("Pre-commit predicate execution failed with: ", e);
-                importResult.addFailedEntity(createEntityImportErrorResult(result, String.format("Pre-commit predicate execution failed with: %s", e.getMessage()), EntityImportErrorType.PRE_COMMIT_PREDICATE));
+                log.error("Pre-import predicate execution failed with: ", e);
+                importResult.addFailedEntity(createEntityImportErrorResult(result, String.format("Pre-import predicate execution failed with: %s", e.getMessage()), EntityImportErrorType.PRE_IMPORT_PREDICATE));
                 return false;
             }
         }
