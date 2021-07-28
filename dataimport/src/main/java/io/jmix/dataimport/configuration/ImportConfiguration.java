@@ -92,91 +92,201 @@ public class ImportConfiguration {
         this.inputDataFormat = inputDataFormat;
     }
 
+    /**
+     * Gets mappings for entity properties.
+     *
+     * @return property mappings
+     */
     public List<PropertyMapping> getPropertyMappings() {
         return propertyMappings;
     }
 
+    /**
+     * Sets mappings for entity properties.
+     *
+     * @param propertyMappings property mappings
+     * @return current instance of import configuration
+     */
     public ImportConfiguration setPropertyMappings(List<PropertyMapping> propertyMappings) {
         this.propertyMappings = propertyMappings;
         return this;
     }
 
+    /**
+     * Adds a property mapping.
+     *
+     * @param propertyMapping property mapping
+     * @return current instance of import configuration
+     */
     public ImportConfiguration addPropertyMapping(PropertyMapping propertyMapping) {
         this.propertyMappings.add(propertyMapping);
         return this;
     }
 
+    /**
+     * Gets an import transaction strategy.
+     *
+     * @return transaction strategy
+     */
     public ImportTransactionStrategy getTransactionStrategy() {
         return transactionStrategy;
     }
 
+    /**
+     * Sets an import transaction strategy.
+     *
+     * @param transactionStrategy transaction strategy
+     * @return current instance of import configuration
+     */
     public ImportConfiguration setTransactionStrategy(ImportTransactionStrategy transactionStrategy) {
         this.transactionStrategy = transactionStrategy;
         return this;
     }
 
+    /**
+     * Gets a class of entity to import.
+     *
+     * @return class of entity to import
+     */
     public Class getEntityClass() {
         return entityClass;
     }
 
+    /**
+     * Gets an input data format.
+     *
+     * @return input data format
+     */
     public String getInputDataFormat() {
         return inputDataFormat;
     }
 
+    /**
+     * Gets a charset of input data.
+     *
+     * @return charset of input data
+     */
     public String getInputDataCharset() {
         return inputDataCharset;
     }
 
+    /**
+     * Sets a charset of input data.
+     *
+     * @param inputDataCharset charset of input data
+     * @return current instance of import configuration
+     */
     public ImportConfiguration setInputDataCharset(String inputDataCharset) {
         this.inputDataCharset = inputDataCharset;
         return this;
     }
 
+    /**
+     * Gets a list of unique entity configurations.
+     *
+     * @return list of {@link UniqueEntityConfiguration}
+     */
     public List<UniqueEntityConfiguration> getUniqueEntityConfigurations() {
         return uniqueEntityConfigurations;
     }
 
+    /**
+     * Sets a list of unique entity configurations.
+     *
+     * @param uniqueEntityConfigurations list of configurations for unique entity.
+     * @return current instance of import configuration
+     */
     public ImportConfiguration setUniqueEntityConfigurations(List<UniqueEntityConfiguration> uniqueEntityConfigurations) {
         this.uniqueEntityConfigurations = uniqueEntityConfigurations;
         return this;
     }
 
+    /**
+     * Adds a unique entity configuration.
+     *
+     * @param uniqueEntityConfiguration unique entity configuration
+     * @return current instance of import configuration
+     */
     public ImportConfiguration addUniqueEntityConfiguration(UniqueEntityConfiguration uniqueEntityConfiguration) {
         this.uniqueEntityConfigurations.add(uniqueEntityConfiguration);
         return this;
     }
 
+    /**
+     * Gets a date format.
+     *
+     * @return date format
+     */
     public String getDateFormat() {
         return dateFormat;
     }
 
+    /**
+     * Sets a date format to parse date strings.
+     *
+     * @param dateFormat date format used in input data
+     * @return  current instance of import configuration
+     */
     public ImportConfiguration setDateFormat(String dateFormat) {
         this.dateFormat = dateFormat;
         return this;
     }
 
+    /**
+     * Gets a format of boolean true value.
+     *
+     * @return format of boolean true value
+     */
     public String getBooleanTrueValue() {
         return booleanTrueValue;
     }
 
+    /**
+     * Sets a format of boolean true value.
+     *
+     * @param booleanTrueValue format of boolean true value
+     * @return current instance of import configuration
+     */
     public ImportConfiguration setBooleanTrueValue(String booleanTrueValue) {
         this.booleanTrueValue = booleanTrueValue;
         return this;
     }
 
+    /**
+     * Gets a format of boolean false value.
+     *
+     * @return format of boolean false value
+     */
     public String getBooleanFalseValue() {
         return booleanFalseValue;
     }
 
+    /**
+     * Sets a format of boolean false value.
+     *
+     * @param booleanFalseValue format of boolean false value
+     * @return current instance of import configuration
+     */
     public ImportConfiguration setBooleanFalseValue(String booleanFalseValue) {
         this.booleanFalseValue = booleanFalseValue;
         return this;
     }
 
+    /**
+     * Gets a predicate executed before entity import.
+     *
+     * @return predicate executed before entity import
+     */
     public Predicate<EntityExtractionResult> getPreImportPredicate() {
         return preImportPredicate;
     }
 
+    /**
+     * Sets a predicate executed before entity import.
+     *
+     * @param preImportPredicate predicate executed before entity import
+     * @return current instance of import configuration
+     */
     public ImportConfiguration setPreImportPredicate(Predicate<EntityExtractionResult> preImportPredicate) {
         this.preImportPredicate = preImportPredicate;
         return this;

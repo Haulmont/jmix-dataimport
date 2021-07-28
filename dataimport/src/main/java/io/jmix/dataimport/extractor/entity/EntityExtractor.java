@@ -34,7 +34,7 @@ public interface EntityExtractor {
      * @param dataItem source of raw values for the entity
      * @return created entity populated by property values
      */
-    Object extract(ImportConfiguration importConfiguration, ImportedDataItem dataItem);
+    Object extractEntity(ImportConfiguration importConfiguration, ImportedDataItem dataItem);
 
     /**
      * Each {@link ImportedDataItem} in specified imported data is processed. For each data item it is checked whether
@@ -44,5 +44,5 @@ public interface EntityExtractor {
      * @param importedData imported data
      * @return extraction results for each unique extracted entity
      */
-    List<EntityExtractionResult> extract(ImportConfiguration importConfiguration, ImportedData importedData);
+    List<EntityExtractionResult> extractEntities(ImportConfiguration importConfiguration, ImportedData importedData);
 }

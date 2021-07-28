@@ -230,7 +230,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                             return PaymentType.fromId(paymentType);
                         })
                         .addSimplePropertyMapping("bonusAmount", "Bonus Amount")
-                        .addPropertyMapping(new ReferencePropertyMapping('bonusCard', 'Bonus Card Number', 'cardNumber'))
+                        .addReferencePropertyMapping('bonusCard', 'Bonus Card Number', 'cardNumber', ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .build())
                 .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)//mapping for order lines
                         .addReferencePropertyMapping("product", "Product Name", "name",

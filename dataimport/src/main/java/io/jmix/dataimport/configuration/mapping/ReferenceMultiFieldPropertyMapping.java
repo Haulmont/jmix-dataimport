@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
     protected String entityPropertyName;
     protected String dataFieldName; //optional
-    protected List<PropertyMapping> referencePropertyMappings = new ArrayList<>();
+    protected List<PropertyMapping> referencePropertyMappings;
     protected List<String> lookupPropertyNames;
     protected ReferenceImportPolicy referenceImportPolicy;
 
@@ -56,11 +56,6 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
 
     public String getDataFieldName() {
         return dataFieldName;
-    }
-
-    @Override
-    public boolean isReference() {
-        return true;
     }
 
     public ReferenceMultiFieldPropertyMapping setDataFieldName(String dataFieldName) {
@@ -117,16 +112,8 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
         }
 
         public Builder addCustomPropertyMapping(String entityPropertyName,
-                                                String dataFieldName,
                                                 Function<CustomMappingContext, Object> customValueFunction) {
-            this.referencePropertyMappings.add(new CustomPropertyMapping(entityPropertyName, dataFieldName, customValueFunction));
-            return this;
-        }
-
-        public Builder addCustomPropertyMapping(String entityPropertyName,
-                                                Function<CustomMappingContext, Object> customValueFunction) {
-            this.referencePropertyMappings.add(new CustomPropertyMapping(entityPropertyName)
-                    .setCustomValueFunction(customValueFunction));
+            this.referencePropertyMappings.add(new CustomPropertyMapping(entityPropertyName, customValueFunction));
             return this;
         }
 
@@ -134,10 +121,7 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
                                                    String dataFieldName,
                                                    String lookupPropertyName,
                                                    ReferenceImportPolicy policy) {
-            this.referencePropertyMappings.add(new ReferencePropertyMapping(entityPropertyName)
-                    .setDataFieldName(dataFieldName)
-                    .setLookupPropertyName(lookupPropertyName)
-                    .setReferenceImportPolicy(policy));
+            this.referencePropertyMappings.add(new ReferencePropertyMapping(entityPropertyName, dataFieldName, lookupPropertyName, policy));
             return this;
         }
 

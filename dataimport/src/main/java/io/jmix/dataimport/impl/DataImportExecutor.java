@@ -108,7 +108,7 @@ public class DataImportExecutor {
             importResult.setSuccess(true);
             List<EntityExtractionResult> extractionResults = null;
             try {
-                extractionResults = entityExtractor.extract(importConfiguration, importedData);
+                extractionResults = entityExtractor.extractEntities(importConfiguration, importedData);
             } catch (Exception e) {
                 resetImportResult(e, "Entities extraction failed: " + e.getMessage());
             }
@@ -135,7 +135,7 @@ public class DataImportExecutor {
             importedData.getItems().forEach(dataItem -> {
                 Object extractedEntity = null;
                 try {
-                    extractedEntity = entityExtractor.extract(importConfiguration, dataItem);
+                    extractedEntity = entityExtractor.extractEntity(importConfiguration, dataItem);
                 } catch (Exception e) {
                     log.error(String.format("Entity extraction failed for data item: %s", dataItem.toString()), e);
                     importResult.setSuccess(false);

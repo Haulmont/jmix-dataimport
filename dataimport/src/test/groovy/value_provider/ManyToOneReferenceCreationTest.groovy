@@ -107,7 +107,7 @@ class ManyToOneReferenceCreationTest extends DataImportSpec {
     def 'test ignore not existing many-to-one reference using data from imported data item'() {
         given:
         def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
-                .addReferencePropertyMapping("customer", 'name', "Customer Name", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping("customer", "Customer Name", 'name', ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
 
         def importedDataItem = new ImportedDataItem()
@@ -149,7 +149,7 @@ class ManyToOneReferenceCreationTest extends DataImportSpec {
     def 'test load existing reference using data from imported item'() {
         given:
         def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
-                .addReferencePropertyMapping("customer", "name", "Customer Name", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping("customer", "Customer Name", "name", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
 
         def importedDataItem = new ImportedDataItem()

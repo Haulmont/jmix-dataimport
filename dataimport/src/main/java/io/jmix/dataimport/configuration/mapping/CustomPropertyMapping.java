@@ -25,40 +25,19 @@ import java.util.function.Function;
  */
 public class CustomPropertyMapping implements PropertyMapping {
     protected String entityPropertyName;
-    protected String dataFieldName;
     protected Function<CustomMappingContext, Object> customValueFunction;
 
-    public CustomPropertyMapping(String entityPropertyName, String dataFieldName, Function<CustomMappingContext, Object> customValueFunction) {
+    public CustomPropertyMapping(String entityPropertyName, Function<CustomMappingContext, Object> customValueFunction) {
         this.entityPropertyName = entityPropertyName;
-        this.dataFieldName = dataFieldName;
         this.customValueFunction = customValueFunction;
     }
 
-    public CustomPropertyMapping(String entityPropertyName) {
-        this.entityPropertyName = entityPropertyName;
-    }
-
     public String getDataFieldName() {
-        return dataFieldName;
-    }
-
-    @Override
-    public boolean isReference() {
-        return false;
-    }
-
-    public CustomPropertyMapping setDataFieldName(String dataFieldName) {
-        this.dataFieldName = dataFieldName;
-        return this;
+        return null;
     }
 
     public Function<CustomMappingContext, Object> getCustomValueFunction() {
         return customValueFunction;
-    }
-
-    public CustomPropertyMapping setCustomValueFunction(Function<CustomMappingContext, Object> customValueFunction) {
-        this.customValueFunction = customValueFunction;
-        return this;
     }
 
     public String getEntityPropertyName() {

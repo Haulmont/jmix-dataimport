@@ -53,8 +53,4 @@ public interface PropertyMapping {
     @Nullable
     String getDataFieldName();
 
-    /**
-     * @return true if mapping related to reference property.
-     */
-    boolean isReference();
 }

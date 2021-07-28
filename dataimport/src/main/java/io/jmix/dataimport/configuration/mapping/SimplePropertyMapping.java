@@ -44,11 +44,6 @@ public class SimplePropertyMapping implements PropertyMapping {
         return dataFieldName;
     }
 
-    @Override
-    public boolean isReference() {
-        return false;
-    }
-
     public String getEntityPropertyName() {
         return entityPropertyName;
     }

@@ -51,14 +51,14 @@ public class EntityExtractorImpl implements EntityExtractor {
     protected DuplicateEntityManager duplicateEntityManager;
 
     @Override
-    public Object extract(ImportConfiguration importConfiguration, ImportedDataItem dataItem) {
+    public Object extractEntity(ImportConfiguration importConfiguration, ImportedDataItem dataItem) {
         Object entity = metadata.create(importConfiguration.getEntityClass());
         EntityInfo entityInfo = entityPropertiesPopulator.populateProperties(entity, importConfiguration, dataItem);
         return entityInfo.getEntity();
     }
 
     @Override
-    public List<EntityExtractionResult> extract(ImportConfiguration importConfiguration, ImportedData importedData) {
+    public List<EntityExtractionResult> extractEntities(ImportConfiguration importConfiguration, ImportedData importedData) {
         List<EntityExtractionResult> results = new ArrayList<>();
         Map<PropertyMapping, List<Object>> createdReferences = new HashMap<>();
 

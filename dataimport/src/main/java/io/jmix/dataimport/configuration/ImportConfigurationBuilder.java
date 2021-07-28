@@ -93,27 +93,45 @@ public class ImportConfigurationBuilder {
      * Adds a custom mapping for property.
      *
      * @param entityPropertyName  entity property name
-     * @param dataFieldName       name of the field from input data that contains a raw value of property
      * @param customValueFunction function to get value for the
      * @return current instance of builder
      */
     public ImportConfigurationBuilder addCustomPropertyMapping(String entityPropertyName,
-                                                               String dataFieldName,
                                                                Function<CustomMappingContext, Object> customValueFunction) {
-        this.propertyMappings.add(new CustomPropertyMapping(entityPropertyName, dataFieldName, customValueFunction));
+        this.propertyMappings.add(new CustomPropertyMapping(entityPropertyName, customValueFunction));
         return this;
     }
 
+    /**
+     * Creates and adds a {@link UniqueEntityConfiguration}.
+     *
+     * @param policy policy which be applied for found duplicates
+     * @param entityPropertyNames names of the entity properties by which values the duplicates will be searched
+     * @return current instance of builder
+     */
     public ImportConfigurationBuilder addUniqueEntityConfiguration(DuplicateEntityPolicy policy, String... entityPropertyNames) {
         this.uniqueEntityConfigurations.add(new UniqueEntityConfiguration(Arrays.asList(entityPropertyNames), policy));
         return this;
     }
 
+    /**
+     * Creates and adds a {@link UniqueEntityConfiguration}.
+     *
+     * @param policy policy which be applied for found duplicates
+     * @param entityPropertyNames names of the entity properties by which values the duplicates will be searched
+     * @return current instance of builder
+     */
     public ImportConfigurationBuilder addUniqueEntityConfiguration(DuplicateEntityPolicy policy, List<String> entityPropertyNames) {
         this.uniqueEntityConfigurations.add(new UniqueEntityConfiguration(entityPropertyNames, policy));
         return this;
     }
 
+    /**
+     * Sets a transaction strategy.
+     *
+     * @param transactionStrategy transaction strategy
+     * @return current instance of builder
+     */
     public ImportConfigurationBuilder withTransactionStrategy(ImportTransactionStrategy transactionStrategy) {
         this.transactionStrategy = transactionStrategy;
         return this;
@@ -123,21 +141,18 @@ public class ImportConfigurationBuilder {
      * Creates and adds a property mapping for the reference property mapped by one data field.
      *
      * @param entityPropertyName reference property name
-     * @param lookupPropertyName property name from the reference entity
      * @param dataFieldName      name of the field from input data that contains a raw value of lookup property
+     * @param lookupPropertyName property name from the reference entity
      * @param policy             reference import policy
      * @return current instance of builder
      *
      * @see ReferencePropertyMapping
      */
     public ImportConfigurationBuilder addReferencePropertyMapping(String entityPropertyName,
-                                                                  String lookupPropertyName,
                                                                   String dataFieldName,
+                                                                  String lookupPropertyName,
                                                                   ReferenceImportPolicy policy) {
-        this.propertyMappings.add(new ReferencePropertyMapping(entityPropertyName)
-                .setDataFieldName(dataFieldName)
-                .setReferenceImportPolicy(policy)
-                .setLookupPropertyName(lookupPropertyName));
+        this.propertyMappings.add(new ReferencePropertyMapping(entityPropertyName, dataFieldName, lookupPropertyName, policy));
         return this;
     }
 
@@ -184,11 +199,23 @@ public class ImportConfigurationBuilder {
         return this;
     }
 
+    /**
+     * Sets a predicate that is executed for each created entity before import.
+     * If the predicate returns false, the entity is not imported.
+     *
+     * @param preImportPredicate pre-import predicate
+     * @return current instance of builder
+     */
     public ImportConfigurationBuilder withPreImportPredicate(Predicate<EntityExtractionResult> preImportPredicate) {
         this.preImportPredicate = preImportPredicate;
         return this;
     }
 
+    /**
+     * Creates an instance of {@link ImportConfiguration} based on the specified parameters.
+     *
+     * @return created instance of {@link ImportConfiguration}
+     */
     public ImportConfiguration build() {
         return new ImportConfiguration(entityClass, this.inputDataFormat)
                 .setDateFormat(dateFormat)

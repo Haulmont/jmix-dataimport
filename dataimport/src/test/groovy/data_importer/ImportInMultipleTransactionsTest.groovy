@@ -202,9 +202,8 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
                             return PaymentType.fromId(paymentType)
                         })
                         .addSimplePropertyMapping("bonusAmount", "Bonus Amount")
-                        .addPropertyMapping(new ReferencePropertyMapping('bonusCard')
-                                .setDataFieldName('Bonus Card Number')
-                                .setLookupPropertyName('cardNumber'))
+                        .addReferencePropertyMapping('bonusCard', 'Bonus Card Number', 'cardNumber',
+                                ReferenceImportPolicy.IGNORE_IF_MISSING)
                         .build())
                 .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE) //mapping for order lines
                         .addReferencePropertyMapping("product", "Product Name", "name",
@@ -289,7 +288,7 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
                         .addSimplePropertyMapping('date', 'orderDate')
                         .lookupByAllSimpleProperties()
                         .build())
-                .addReferencePropertyMapping('product', 'name', "productName", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping('product', "productName", 'name',  ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .addSimplePropertyMapping("quantity", "quantity")
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
@@ -319,7 +318,7 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         given:
         def importConfig = ImportConfiguration.builder(OrderLine, InputDataFormat.XML)
                 .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", "name", "productName", ReferenceImportPolicy.FAIL_IF_MISSING)
+                .addReferencePropertyMapping("product", "productName",  "name", ReferenceImportPolicy.FAIL_IF_MISSING)
                 .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('order', ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping('date', 'orderDate')
                         .addSimplePropertyMapping('orderNumber', 'orderNumber')

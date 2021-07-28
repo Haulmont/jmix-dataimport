@@ -89,7 +89,7 @@ class DataImporterTest extends DataImportSpec {
                         .addSimplePropertyMapping("deliveryDate", "Delivery Date")
                         .addSimplePropertyMapping("fullAddress", "Delivery Address")
                         .build())
-                .addReferencePropertyMapping('customer', 'name', 'Customer Name', ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping('customer', 'Customer Name', 'name', ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .addSimplePropertyMapping('orderNumber', 'Order Num')
                 .addSimplePropertyMapping('date', 'Order Date')
                 .addSimplePropertyMapping('amount', 'Order Amount')

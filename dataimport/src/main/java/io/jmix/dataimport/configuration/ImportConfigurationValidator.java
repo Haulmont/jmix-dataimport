@@ -23,7 +23,6 @@ import io.jmix.core.metamodel.model.MetaProperty;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy;
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
-import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
 import io.jmix.dataimport.exception.ImportException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -46,21 +45,8 @@ public class ImportConfigurationValidator {
         propertyMappings.forEach(propertyMapping -> {
             if (propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
                 validateMultiFieldMapping(ownerEntity, (ReferenceMultiFieldPropertyMapping) propertyMapping);
-            } else if (propertyMapping instanceof ReferencePropertyMapping) {
-                validateReferenceMapping((ReferencePropertyMapping) propertyMapping);
             }
         });
-    }
-
-    protected void validateReferenceMapping(ReferencePropertyMapping propertyMapping) {
-        if (propertyMapping.getLookupPropertyName() == null) {
-            throw new ImportException(String.format("Lookup property name is not set for property [%s]", propertyMapping.getEntityPropertyName()));
-        }
-
-        if (propertyMapping.getDataFieldName() == null) {
-            throw new ImportException(String.format("Data field name is not set for lookup property [%s] of reference [%s]", propertyMapping.getLookupPropertyName(),
-                    propertyMapping.getEntityPropertyName()));
-        }
     }
 
     protected void validateMultiFieldMapping(MetaClass ownerEntity, ReferenceMultiFieldPropertyMapping propertyMapping) {

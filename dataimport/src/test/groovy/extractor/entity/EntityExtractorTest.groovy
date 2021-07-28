@@ -18,7 +18,6 @@ package extractor.entity
 
 import io.jmix.dataimport.InputDataFormat
 import io.jmix.dataimport.configuration.ImportConfiguration
-import io.jmix.dataimport.configuration.ImportConfigurationBuilder
 import io.jmix.dataimport.extractor.data.ImportedData
 import io.jmix.dataimport.extractor.data.ImportedDataItem
 import io.jmix.dataimport.extractor.entity.EntityExtractor
@@ -46,7 +45,7 @@ class EntityExtractorTest extends DataImportSpec {
         importedDataItem.addRawValue('Price', '210.55')
 
         when: 'entity extracted'
-        def extractedEntity = entityExtractor.extract(configuration, importedDataItem)
+        def extractedEntity = entityExtractor.extractEntity(configuration, importedDataItem)
 
         then:
         def product = extractedEntity as Product
@@ -85,7 +84,7 @@ class EntityExtractorTest extends DataImportSpec {
         importedData.addItem(importedDataItem2)
 
         when: 'entities extracted'
-        def entityExtractionResults = entityExtractor.extract(configuration, importedData)
+        def entityExtractionResults = entityExtractor.extractEntities(configuration, importedData)
 
         then:
         entityExtractionResults.size() == 2
@@ -135,7 +134,7 @@ class EntityExtractorTest extends DataImportSpec {
         importedData.addItem(importedDataItem2)
 
         when: 'entity extracted'
-        def entityExtractionResults = entityExtractor.extract(configuration, importedData)
+        def entityExtractionResults = entityExtractor.extractEntities(configuration, importedData)
 
         then:
         entityExtractionResults.size() == 1

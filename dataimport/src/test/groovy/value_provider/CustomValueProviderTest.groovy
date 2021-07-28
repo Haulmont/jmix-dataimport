@@ -38,7 +38,7 @@ class CustomValueProviderTest extends DataImportSpec {
     def 'test custom value for simple property'() {
         given:
         def configuration = ImportConfiguration.builder(Product, InputDataFormat.XLSX)
-                .addCustomPropertyMapping("price", "Price", customMappingContext -> {
+                .addCustomPropertyMapping("price", customMappingContext -> {
                     def rawValue = customMappingContext.rawValues["Price"]
                     try {
                         def value = new BigDecimal(rawValue)
@@ -66,19 +66,17 @@ class CustomValueProviderTest extends DataImportSpec {
 
     def 'test custom value of reference property if raw value is string'() {
         given:
-        def customMapping = new CustomPropertyMapping("customer")
-                .setDataFieldName("customerName")
-                .setCustomValueFunction(customMappingContext -> {
-                    String customerName = customMappingContext.rawValues["customerName"]
-                    def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
-                    if (customer == null) {
-                        def newCustomer = dataManager.create(Customer)
-                        newCustomer.name = customerName
-                        return newCustomer
-                    }
-                })
+        def customValueFunction = customMappingContext -> {
+            String customerName = customMappingContext.rawValues["customerName"]
+            def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
+            if (customer == null) {
+                def newCustomer = dataManager.create(Customer)
+                newCustomer.name = customerName
+                return newCustomer
+            }
+        }
         def configuration = new ImportConfiguration(Order, InputDataFormat.XML)
-                .addPropertyMapping(customMapping)
+                .addPropertyMapping(new CustomPropertyMapping("customer", customValueFunction))
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('customerName', 'John Dow')
@@ -96,21 +94,19 @@ class CustomValueProviderTest extends DataImportSpec {
     def 'test custom value of reference property if other raw values are taken from imported item'() {
         given:
         def configuration = new ImportConfiguration(Order, InputDataFormat.XML)
-                .addPropertyMapping(new CustomPropertyMapping("customer")
-                        .setCustomValueFunction((customMappingContext) -> {
-                            String customerName = customMappingContext.rawValues["customerName"]
-                            def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
-                            String email = customMappingContext.rawValues['customerEmail']
-                            String grade = customMappingContext.rawValues['customerGrade']
-                            if (customer == null) {
-                                def newCustomer = dataManager.create(Customer)
-                                newCustomer.name = customerName
-                                newCustomer.email = email
-                                newCustomer.grade = CustomerGrade.fromId(grade)
-                                return newCustomer
-                            }
-                        })
-                )
+                .addPropertyMapping(new CustomPropertyMapping("customer", (customMappingContext) -> {
+                    String customerName = customMappingContext.rawValues["customerName"]
+                    def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
+                    String email = customMappingContext.rawValues['customerEmail']
+                    String grade = customMappingContext.rawValues['customerGrade']
+                    if (customer == null) {
+                        def newCustomer = dataManager.create(Customer)
+                        newCustomer.name = customerName
+                        newCustomer.email = email
+                        newCustomer.grade = CustomerGrade.fromId(grade)
+                        return newCustomer
+                    }
+                }))
 
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue('customerName', 'John Dow')
@@ -127,37 +123,4 @@ class CustomValueProviderTest extends DataImportSpec {
         checkCustomer(order.customer, 'John Dow', 'j.dow@mail.com', CustomerGrade.BRONZE)
     }
 
-    def 'test custom value of reference property if raw value is object'() {
-        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
-                .addCustomPropertyMapping("customer", "customer", customMappingContext -> {
-                    String customerName = customMappingContext.rawValues['name']
-
-                    def customer = loadCustomer(customerName, FetchPlan.BASE) as Customer
-                    if (customer == null) {
-                        String email = customMappingContext.rawValues['email']
-                        String grade = customMappingContext.rawValues['grade']
-
-                        def newCustomer = dataManager.create(Customer)
-                        newCustomer.name = customerName
-                        newCustomer.email = email
-                        newCustomer.grade = CustomerGrade.fromId(grade)
-                        return newCustomer
-                    }
-                })
-                .build()
-
-        def importedDataItem = new ImportedDataItem()
-        importedDataItem.addRawValue('customer', createImportedObject(ParamsMap.of('name', 'John Dow',
-                'email', 'j.dow@mail.com',
-                'grade', CustomerGrade.BRONZE.id)))
-
-
-        when: 'entity properties populated'
-        def order = dataManager.create(Order)
-        def entityInfo = entityPropertiesPopulator.populateProperties(order, configuration, importedDataItem)
-
-        then:
-        entityInfo.entity == order
-        checkCustomer(order.customer, 'John Dow', 'j.dow@mail.com', CustomerGrade.BRONZE)
-    }
 }

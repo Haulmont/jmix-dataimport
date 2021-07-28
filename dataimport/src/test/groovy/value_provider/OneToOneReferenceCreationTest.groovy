@@ -41,7 +41,7 @@ class OneToOneReferenceCreationTest extends DataImportSpec {
         given:
         def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
-                .addReferencePropertyMapping("bonusCard", "cardNumber", "bonusCardNumber", ReferenceImportPolicy.CREATE)
+                .addReferencePropertyMapping("bonusCard", "bonusCardNumber", "cardNumber", ReferenceImportPolicy.CREATE)
                 .build()
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue("customerName", "John Dow")
@@ -120,7 +120,7 @@ class OneToOneReferenceCreationTest extends DataImportSpec {
         given:
         def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
-                .addReferencePropertyMapping("bonusCard", "cardNumber", "bonusCardNumber", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping("bonusCard", "bonusCardNumber", "cardNumber", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue("customerName", "John Dow")
@@ -140,7 +140,7 @@ class OneToOneReferenceCreationTest extends DataImportSpec {
         given:
         def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "customerName")
-                .addReferencePropertyMapping("bonusCard", "cardNumber", "bonusCardNumber", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping("bonusCard", "bonusCardNumber", "cardNumber", ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .build()
         def importedDataItem = new ImportedDataItem()
         importedDataItem.addRawValue("customerName", "John Dow")
@@ -199,7 +199,7 @@ class OneToOneReferenceCreationTest extends DataImportSpec {
                         .addSimplePropertyMapping("paymentType", "paymentType")
                         .addSimplePropertyMapping("date", "paymentDate")
                         .addSimplePropertyMapping("bonusAmount", "bonusAmount")
-                        .addReferencePropertyMapping("bonusCard", "bonusCardNumber","cardNumber",  ReferenceImportPolicy.CREATE_IF_MISSING)
+                        .addReferencePropertyMapping("bonusCard", "bonusCardNumber", "cardNumber", ReferenceImportPolicy.CREATE_IF_MISSING)
                         .build())
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()

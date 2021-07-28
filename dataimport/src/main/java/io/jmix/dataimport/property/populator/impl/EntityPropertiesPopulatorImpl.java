@@ -22,6 +22,7 @@ import io.jmix.core.entity.EntityValues;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
+import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.extractor.data.RawValuesSource;
 import io.jmix.dataimport.property.populator.EntityInfo;
@@ -64,7 +65,7 @@ public class EntityPropertiesPopulatorImpl implements EntityPropertiesPopulator 
                                     RawValuesSource rawValuesSource,
                                     @Nullable Map<PropertyMapping, List<Object>> createdReferences) {
         Object value;
-        if (propertyMapping.isReference()) {
+        if (propertyMapping instanceof ReferencePropertyMapping || propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
             value = propertyValueProvider.getReferenceValue(entity, importConfiguration, propertyMapping, rawValuesSource, createdReferences);
         } else {
             value = propertyValueProvider.getSimpleValue(entity, importConfiguration, propertyMapping, rawValuesSource);

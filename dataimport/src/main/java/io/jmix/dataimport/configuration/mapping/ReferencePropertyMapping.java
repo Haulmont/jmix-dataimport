@@ -35,16 +35,12 @@ public class ReferencePropertyMapping implements PropertyMapping {
     private String lookupPropertyName;
     private ReferenceImportPolicy referenceImportPolicy;
 
-    public ReferencePropertyMapping(String entityPropertyName, String dataFieldName, String lookupPropertyName) {
+    public ReferencePropertyMapping(String entityPropertyName, String dataFieldName, String lookupPropertyName,
+                                    ReferenceImportPolicy importPolicy) {
         this.entityPropertyName = entityPropertyName;
         this.dataFieldName = dataFieldName;
         this.lookupPropertyName = lookupPropertyName;
-        this.referenceImportPolicy = ReferenceImportPolicy.IGNORE_IF_MISSING;
-    }
-
-    public ReferencePropertyMapping(String entityPropertyName) {
-        this.entityPropertyName = entityPropertyName;
-        this.referenceImportPolicy = ReferenceImportPolicy.IGNORE_IF_MISSING;
+        this.referenceImportPolicy = importPolicy;
     }
 
     public String getEntityPropertyName() {
@@ -55,32 +51,12 @@ public class ReferencePropertyMapping implements PropertyMapping {
         return dataFieldName;
     }
 
-    @Override
-    public boolean isReference() {
-        return true;
-    }
-
-    public ReferencePropertyMapping setDataFieldName(String dataFieldName) {
-        this.dataFieldName = dataFieldName;
-        return this;
-    }
-
     public String getLookupPropertyName() {
         return lookupPropertyName;
-    }
-
-    public ReferencePropertyMapping setLookupPropertyName(String lookupPropertyName) {
-        this.lookupPropertyName = lookupPropertyName;
-
-        return this;
     }
 
     public ReferenceImportPolicy getReferenceImportPolicy() {
         return referenceImportPolicy;
     }
 
-    public ReferencePropertyMapping setReferenceImportPolicy(ReferenceImportPolicy referenceImportPolicy) {
-        this.referenceImportPolicy = referenceImportPolicy;
-        return this;
-    }
 }
