@@ -20,18 +20,18 @@ import java.util.List;
 
 public class UniqueEntityConfiguration {
     protected List<String> entityPropertyNames;
-    protected DuplicateEntityPolicy policy;
+    protected DuplicateEntityPolicy duplicateEntityPolicy;
 
-    public UniqueEntityConfiguration(List<String> entityPropertyNames, DuplicateEntityPolicy policy) {
+    public UniqueEntityConfiguration(List<String> entityPropertyNames, DuplicateEntityPolicy duplicateEntityPolicy) {
         this.entityPropertyNames = entityPropertyNames;
-        this.policy = policy;
+        this.duplicateEntityPolicy = duplicateEntityPolicy;
     }
 
     public List<String> getEntityPropertyNames() {
         return entityPropertyNames;
     }
 
-    public DuplicateEntityPolicy getPolicy() {
-        return policy;
+    public DuplicateEntityPolicy getDuplicateEntityPolicy() {
+        return duplicateEntityPolicy;
     }
 }

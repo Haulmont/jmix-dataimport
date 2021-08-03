@@ -27,7 +27,7 @@ package io.jmix.dataimport.configuration.mapping;
  *     <li>BigDecimal</li>
  *     <li>Boolean</li>
  *     <li>Date</li>
- *     <li>Local date</li>
+ *     <li>LocalDate</li>
  *     <li>Enumeration</li>
  * </ul>
  */

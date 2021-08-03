@@ -32,13 +32,12 @@ public interface EntityExtractor {
      *
      * @param importConfiguration import configuration
      * @param dataItem source of raw values for the entity
-     * @return created entity populated by property values
+     * @return extraction result with entity which properties are populated by values
      */
-    Object extractEntity(ImportConfiguration importConfiguration, ImportedDataItem dataItem);
+    EntityExtractionResult extractEntity(ImportConfiguration importConfiguration, ImportedDataItem dataItem);
 
     /**
-     * Each {@link ImportedDataItem} in specified imported data is processed. For each data item it is checked whether
-     * the entity with the same values of simple properties are extracted. If such entity exists, it will be populated by values from current imported data item.
+     * Creates an entity for each {@link ImportedDataItem} from the specified imported data.
      *
      * @param importConfiguration import configuration
      * @param importedData imported data

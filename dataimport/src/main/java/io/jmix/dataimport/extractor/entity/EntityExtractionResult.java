@@ -41,9 +41,4 @@ public class EntityExtractionResult {
     public ImportedDataItem getImportedDataItem() {
         return importedDataItem;
     }
-
-    public EntityExtractionResult setImportedDataItem(ImportedDataItem importedDataItem) {
-        this.importedDataItem = importedDataItem;
-        return this;
-    }
 }

@@ -17,7 +17,6 @@
 package io.jmix.dataimport.extractor.entity.impl;
 
 import io.jmix.core.Metadata;
-import io.jmix.core.entity.EntityValues;
 import io.jmix.dataimport.DuplicateEntityManager;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
@@ -34,7 +33,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 @Component("datimp_EntityExtractor")
@@ -51,36 +49,29 @@ public class EntityExtractorImpl implements EntityExtractor {
     protected DuplicateEntityManager duplicateEntityManager;
 
     @Override
-    public Object extractEntity(ImportConfiguration importConfiguration, ImportedDataItem dataItem) {
+    public EntityExtractionResult extractEntity(ImportConfiguration importConfiguration, ImportedDataItem dataItem) {
         Object entity = metadata.create(importConfiguration.getEntityClass());
         EntityInfo entityInfo = entityPropertiesPopulator.populateProperties(entity, importConfiguration, dataItem);
-        return entityInfo.getEntity();
+        return new EntityExtractionResult(entityInfo.getEntity(), dataItem);
     }
 
     @Override
     public List<EntityExtractionResult> extractEntities(ImportConfiguration importConfiguration, ImportedData importedData) {
-        List<EntityExtractionResult> results = new ArrayList<>();
+        List<EntityExtractionResult> entityExtractionResults = new ArrayList<>();
         Map<PropertyMapping, List<Object>> createdReferences = new HashMap<>();
 
         importedData.getItems().forEach(importedDataItem -> {
-            EntityExtractionResult alreadyExtractedEntity = getExistingEntity(importedDataItem, importConfiguration, results);
-            Object entityToPopulate = alreadyExtractedEntity == null ? metadata.create(importConfiguration.getEntityClass()) : alreadyExtractedEntity.getEntity();
-
+            Object entityToPopulate = metadata.create(importConfiguration.getEntityClass());
             EntityInfo entityInfo = entityPropertiesPopulator.populateProperties(entityToPopulate, importConfiguration, importedDataItem, createdReferences);
-
-            if (alreadyExtractedEntity == null) {
-                results.add(new EntityExtractionResult(entityToPopulate, importedDataItem));
-            } else {
-                alreadyExtractedEntity.setImportedDataItem(importedDataItem);
-            }
-
+            entityExtractionResults.add(new EntityExtractionResult(entityInfo.getEntity(), importedDataItem));
             fillCreatedReferences(entityInfo, createdReferences);
         });
 
-        return results;
+
+        return entityExtractionResults;
     }
 
-    public void fillCreatedReferences(EntityInfo entityInfo, Map<PropertyMapping, List<Object>> createdReferencesByMapping) {
+    protected void fillCreatedReferences(EntityInfo entityInfo, Map<PropertyMapping, List<Object>> createdReferencesByMapping) {
         List<CreatedReference> createdReferences = entityInfo.getCreatedReferences();
         if (CollectionUtils.isNotEmpty(createdReferences)) {
             createdReferences.forEach(createdReference -> {
@@ -93,26 +84,5 @@ public class EntityExtractorImpl implements EntityExtractor {
                 createdReferencesByMapping.put(propertyMapping, createdObjects);
             });
         }
-    }
-
-    @Nullable
-    protected EntityExtractionResult getExistingEntity(ImportedDataItem dataItem, ImportConfiguration importConfiguration, List<EntityExtractionResult> extractedEntities) {
-        if (!extractedEntities.isEmpty()) {
-            Map<String, Object> propertyValues = propertyMappingUtils.getPropertyValues(importConfiguration, dataItem);
-
-            return extractedEntities.stream()
-                    .filter(extractionResult -> !findNotEqualValue(propertyValues, extractionResult.getEntity()))
-                    .findFirst().orElse(null);
-        }
-        return null;
-    }
-
-    protected boolean findNotEqualValue(Map<String, Object> propertyValues, Object entity) {
-        return propertyValues.entrySet().stream().anyMatch(entry -> {
-            String propertyName = entry.getKey();
-            Object propertyValue = entry.getValue();
-            Object propertyValueInEntity = EntityValues.getValue(entity, propertyName);
-            return !EntityValues.propertyValueEquals(propertyValue, propertyValueInEntity);
-        });
     }
 }

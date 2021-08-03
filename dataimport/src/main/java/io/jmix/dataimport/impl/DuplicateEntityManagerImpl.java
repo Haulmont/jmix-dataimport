@@ -43,14 +43,29 @@ public class DuplicateEntityManagerImpl implements DuplicateEntityManager {
     public Object load(Object entity, UniqueEntityConfiguration configuration, FetchPlan fetchPlan) {
         LogicalCondition condition = LogicalCondition.and();
         configuration.getEntityPropertyNames().forEach(propertyName -> {
-            Object valueEx = EntityValues.getValueEx(entity, propertyName);
-            if (valueEx != null) {
-                condition.add(PropertyCondition.equal(propertyName, valueEx));
+            Object propertyValue = EntityValues.getValueEx(entity, propertyName);
+            if (propertyValue != null) {
+                condition.add(PropertyCondition.equal(propertyName, propertyValue));
             } else {
                 condition.add(PropertyCondition.isSet(propertyName, false));
             }
         });
         return loadByCondition(entity.getClass(), fetchPlan, condition);
+    }
+
+    @Override
+    public boolean isDuplicated(Object firstEntity, Object secondEntity, UniqueEntityConfiguration configuration) {
+        return !findNotEqualValue(firstEntity, secondEntity, configuration);
+    }
+
+    protected boolean findNotEqualValue(Object firstEntity, Object secondEntity, UniqueEntityConfiguration uniqueEntityConfiguration) {
+        return uniqueEntityConfiguration.getEntityPropertyNames()
+                .stream()
+                .anyMatch(entityPropertyName -> {
+                    Object firstValue = EntityValues.getValueEx(firstEntity, entityPropertyName);
+                    Object secondValue = EntityValues.getValueEx(secondEntity, entityPropertyName);
+                    return !EntityValues.propertyValueEquals(firstValue, secondValue);
+                });
     }
 
     @Nullable

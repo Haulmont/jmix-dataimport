@@ -27,6 +27,8 @@ public interface DuplicateEntityManager {
     @Nullable
     Object load(Object entity, UniqueEntityConfiguration configuration, FetchPlan fetchPlan);
 
+    boolean isDuplicated(Object firstEntity, Object secondEntity, UniqueEntityConfiguration configuration);
+
     @Nullable
     Object find(Collection<Object> existingEntities, Map<String, Object> propertyValues);
 

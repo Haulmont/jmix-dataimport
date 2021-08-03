@@ -48,6 +48,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Nullable;
 import javax.persistence.PersistenceException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -110,22 +111,25 @@ public class DataImportExecutor {
             try {
                 extractionResults = entityExtractor.extractEntities(importConfiguration, importedData);
             } catch (Exception e) {
-                resetImportResult(e, "Entities extraction failed: " + e.getMessage());
+                createErrorResult(e, "Entities extraction failed: " + e.getMessage());
             }
 
             if (extractionResults != null) {
+                List<EntityExtractionResult> processedResults = new ArrayList<>(); //to search duplicates
                 List<Object> entitiesToImport = extractionResults.stream()
-                        .filter(this::checkExtractedEntity)
+                        .filter(extractionResult -> checkEntityDuplicate(extractionResult, processedResults))
+                        .filter(this::checkPreImportPredicate)
                         .map(EntityExtractionResult::getEntity)
+                        .distinct()
                         .collect(Collectors.toList());
                 importEntities(entitiesToImport);
             }
         } catch (ImportUniqueAbortException e) {
-            resetImportResult(e, String.format("Unique violation occurred with Unique Policy ABORT for entity: '%s' with data item: '%s'. Found entity: '%s'",
+            createErrorResult(e, String.format("Unique violation occurred with Unique Policy ABORT for entity: '%s' with data item: '%s'. Found entity: '%s'",
                     e.getCreatedEntity(), e.getImportedDataItem(),
                     e.getExistingEntity()));
         } catch (Exception e) {
-            resetImportResult(e, String.format("Error while importing the data: %s", e.getMessage()));
+            createErrorResult(e, String.format("Error while importing the data: %s", e.getMessage()));
         }
     }
 
@@ -133,9 +137,9 @@ public class DataImportExecutor {
         try {
             importResult.setSuccess(true);
             importedData.getItems().forEach(dataItem -> {
-                Object extractedEntity = null;
+                EntityExtractionResult extractionResult = null;
                 try {
-                    extractedEntity = entityExtractor.extractEntity(importConfiguration, dataItem);
+                    extractionResult = entityExtractor.extractEntity(importConfiguration, dataItem);
                 } catch (Exception e) {
                     log.error(String.format("Entity extraction failed for data item: %s", dataItem.toString()), e);
                     importResult.setSuccess(false);
@@ -144,8 +148,7 @@ public class DataImportExecutor {
                             .setErrorType(EntityImportErrorType.DATA_BINDING)
                             .setErrorMessage(e.getMessage()));
                 }
-                if (extractedEntity != null) {
-                    EntityExtractionResult extractionResult = new EntityExtractionResult(extractedEntity, dataItem);
+                if (extractionResult != null) {
                     boolean needToImport = checkExtractedEntity(extractionResult);
                     if (needToImport) {
                         importEntity(extractionResult);
@@ -156,43 +159,78 @@ public class DataImportExecutor {
             String errorMessage = String.format("Unique violation occurred with Unique Policy ABORT for data row: %s. Found entity: %s",
                     e.getImportedDataItem(),
                     e.getExistingEntity());
-            log.error(errorMessage, e);
-            importResult.setSuccess(false);
-            importResult.setErrorMessage(errorMessage);
+            createErrorResult(e, errorMessage);
         }
     }
 
     protected boolean checkExtractedEntity(EntityExtractionResult entityExtractionResult) {
-        boolean needToImport = checkEntityDuplicates(entityExtractionResult);
+        boolean needToImport = checkEntityDuplicate(entityExtractionResult);
         if (needToImport) {
             return checkPreImportPredicate(entityExtractionResult);
         }
         return false;
     }
 
-    protected boolean checkEntityDuplicates(EntityExtractionResult extractionResult) {
+
+    protected boolean checkEntityDuplicate(EntityExtractionResult extractionResult) {
         if (CollectionUtils.isNotEmpty(importConfiguration.getUniqueEntityConfigurations())) {
-            FetchPlan fetchPlan = getFetchPlanBuilder(createEntityImportPlan(extractionResult.getEntity())).build();
             for (UniqueEntityConfiguration configuration : importConfiguration.getUniqueEntityConfigurations()) {
-                Object existingEntity = duplicateEntityManager.load(extractionResult.getEntity(), configuration, fetchPlan);
+                Object existingEntity = getDuplicateEntity(extractionResult.getEntity(), configuration, null);
                 if (existingEntity != null) {
-                    if (configuration.getPolicy() == DuplicateEntityPolicy.UPDATE) {
-                        EntityInfo entityInfo = entityPropertiesPopulator.populateProperties(existingEntity, importConfiguration, extractionResult.getImportedDataItem());
-                        existingEntity = entityInfo.getEntity();
-                        extractionResult.setEntity(existingEntity);
-                        return true;
-                    } else if (configuration.getPolicy() == DuplicateEntityPolicy.ABORT) {
-                        throw new ImportUniqueAbortException(existingEntity, extractionResult);
-                    } else {
-                        importResult.addFailedEntity(createEntityImportErrorResult(extractionResult,
-                                "Entity not imported since it is already existing and Unique policy is set to SKIP",
-                                EntityImportErrorType.UNIQUE_VIOLATION));
-                        return false;
-                    }
+                    return processExistingEntity(extractionResult, configuration, existingEntity);
                 }
             }
         }
         return true;
+    }
+
+    protected boolean processExistingEntity(EntityExtractionResult extractionResult, UniqueEntityConfiguration configuration, Object existingEntity) {
+        if (configuration.getDuplicateEntityPolicy() == DuplicateEntityPolicy.UPDATE) {
+            EntityInfo entityInfo = entityPropertiesPopulator.populateProperties(existingEntity, importConfiguration, extractionResult.getImportedDataItem());
+            existingEntity = entityInfo.getEntity();
+            extractionResult.setEntity(existingEntity);
+            return true;
+        } else if (configuration.getDuplicateEntityPolicy() == DuplicateEntityPolicy.ABORT) {
+            throw new ImportUniqueAbortException(existingEntity, extractionResult);
+        } else {
+            importResult.addFailedEntity(createEntityImportErrorResult(extractionResult,
+                    "Entity not imported since it is already existing and Unique policy is set to SKIP",
+                    EntityImportErrorType.UNIQUE_VIOLATION));
+            return false;
+        }
+    }
+
+    protected boolean checkEntityDuplicate(EntityExtractionResult entityExtractionResult, List<EntityExtractionResult> processedResults) {
+        boolean needToImport = true;
+        if (CollectionUtils.isNotEmpty(importConfiguration.getUniqueEntityConfigurations())) {
+            Object extractedEntity = entityExtractionResult.getEntity();
+            for (UniqueEntityConfiguration configuration : importConfiguration.getUniqueEntityConfigurations()) {
+                Object existingEntity = getDuplicateEntity(extractedEntity, configuration, processedResults);
+                if (existingEntity != null) {
+                    needToImport = processExistingEntity(entityExtractionResult, configuration, existingEntity);
+                }
+            }
+        }
+        processedResults.add(entityExtractionResult);
+        return needToImport;
+    }
+
+    @Nullable
+    protected Object getDuplicateEntity(Object extractedEntity, UniqueEntityConfiguration configuration, @Nullable List<EntityExtractionResult> processedResults) {
+        FetchPlan fetchPlan = getFetchPlanBuilder(createEntityImportPlan(extractedEntity)).build();
+        Object existingEntity = duplicateEntityManager.load(extractedEntity, configuration, fetchPlan);
+        if (existingEntity == null) {
+            if (processedResults != null) {
+                EntityExtractionResult duplicateResult = processedResults.stream()
+                        .filter(processedResult -> duplicateEntityManager.isDuplicated(extractedEntity, processedResult.getEntity(), configuration))
+                        .findFirst()
+                        .orElse(null);
+                if (duplicateResult != null) {
+                    existingEntity = duplicateResult.getEntity();
+                }
+            }
+        }
+        return existingEntity;
     }
 
     protected boolean checkPreImportPredicate(EntityExtractionResult entityExtractionResult) {
@@ -222,36 +260,10 @@ public class DataImportExecutor {
             Collection<Object> importedEntities = tryToImportEntities(entitiesToImport);
             importResult.setImportedEntityIds(importedEntities.stream().map(EntityValues::getId).collect(Collectors.toList()));
         } catch (EntityValidationException e) {
-            resetImportResult(e, e.getMessage() + "\nTransaction abort - no entity is stored in the database.");
+            createErrorResult(e, e.getMessage() + "\nTransaction abort - no entity is stored in the database.");
         } catch (PersistenceException e) {
-            resetImportResult(e, "Error while executing import: " + e.getMessage() + "\nTransaction abort - no entity is stored in the database.");
+            createErrorResult(e, "Error while executing import: " + e.getMessage() + "\nTransaction abort - no entity is stored in the database.");
         }
-    }
-
-    protected EntityImportError createEntityImportErrorResult(EntityExtractionResult result, String errorMessage, EntityImportErrorType entityImportErrorType) {
-        return new EntityImportError(result.getEntity())
-                .setImportedDataItem(result.getImportedDataItem())
-                .setErrorMessage(errorMessage)
-                .setErrorType(entityImportErrorType);
-    }
-
-    protected void resetImportResult(Exception e, String errorMessage) {
-        log.error(errorMessage, e);
-        importResult.setSuccess(false)
-                .setErrorMessage(errorMessage);
-    }
-
-    protected FetchPlanBuilder getFetchPlanBuilder(EntityImportPlan plan) {
-        FetchPlanBuilder builder = fetchPlans.builder(plan.getEntityClass());
-        plan.getProperties().forEach(entityImportPlanProperty -> {
-            EntityImportPlan propertyPlan = entityImportPlanProperty.getPlan();
-            if (propertyPlan != null) {
-                builder.add(entityImportPlanProperty.getName(), getFetchPlanBuilder(propertyPlan));
-            } else {
-                builder.add(entityImportPlanProperty.getName());
-            }
-        });
-        return builder;
     }
 
     protected void importEntity(EntityExtractionResult entityExtractionResult) {
@@ -289,6 +301,32 @@ public class DataImportExecutor {
             resultList.add(filteredImportedEntities.iterator().next());
         });
         return resultList;
+    }
+
+    protected EntityImportError createEntityImportErrorResult(EntityExtractionResult result, String errorMessage, EntityImportErrorType entityImportErrorType) {
+        return new EntityImportError(result.getEntity())
+                .setImportedDataItem(result.getImportedDataItem())
+                .setErrorMessage(errorMessage)
+                .setErrorType(entityImportErrorType);
+    }
+
+    protected void createErrorResult(Exception e, String errorMessage) {
+        log.error(errorMessage, e);
+        importResult.setSuccess(false)
+                .setErrorMessage(errorMessage);
+    }
+
+    protected FetchPlanBuilder getFetchPlanBuilder(EntityImportPlan plan) {
+        FetchPlanBuilder builder = fetchPlans.builder(plan.getEntityClass());
+        plan.getProperties().forEach(entityImportPlanProperty -> {
+            EntityImportPlan propertyPlan = entityImportPlanProperty.getPlan();
+            if (propertyPlan != null) {
+                builder.add(entityImportPlanProperty.getName(), getFetchPlanBuilder(propertyPlan));
+            } else {
+                builder.add(entityImportPlanProperty.getName());
+            }
+        });
+        return builder;
     }
 
     protected EntityImportPlan createEntityImportPlan(Object entityToImport) {
@@ -366,6 +404,4 @@ public class DataImportExecutor {
                 break;
         }
     }
-
-
 }

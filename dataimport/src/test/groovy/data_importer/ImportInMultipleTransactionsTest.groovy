@@ -16,19 +16,16 @@
 
 package data_importer
 
-import com.google.common.collect.ImmutableMap
+
 import io.jmix.core.FetchPlan
 import io.jmix.core.Resources
 import io.jmix.dataimport.DataImporter
 import io.jmix.dataimport.InputDataFormat
-import io.jmix.dataimport.configuration.ImportConfiguration
-import io.jmix.dataimport.configuration.ImportConfigurationBuilder
 import io.jmix.dataimport.configuration.DuplicateEntityPolicy
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.configuration.ImportTransactionStrategy
-import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
-import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping
 import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
-import io.jmix.dataimport.result.EntityImportError
+import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
 import io.jmix.dataimport.result.EntityImportErrorType
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
@@ -211,7 +208,7 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
                         .addSimplePropertyMapping("quantity", "Quantity")
                         .build())
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
-                .addUniqueEntityConfiguration(DuplicateEntityPolicy.UPDATE, "orderNumber", "date", "amount")
+                .addUniqueEntityConfiguration(DuplicateEntityPolicy.UPDATE, "orderNumber", "date", "amount", "customer.name")
                 .withDateFormat("dd/MM/yyyy HH:mm")
                 .build()
 
@@ -347,5 +344,113 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         def failedOrderLineResult = result.failedEntities[0]
         failedOrderLineResult.errorMessage == 'Existing value not found for property [product] in entity [sales_OrderLine]'
         failedOrderLineResult.errorType == EntityImportErrorType.DATA_BINDING
+    }
+
+    def 'test unique entity configuration with UPDATE policy'() {
+        given:
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.CREATE_IF_MISSING)
+                        .addSimplePropertyMapping('name', 'Customer Name')
+                        .addSimplePropertyMapping('email', 'Customer Email')
+                        .lookupByAllSimpleProperties()
+                        .build())
+                .addSimplePropertyMapping("orderNumber", "Order Num")
+                .addSimplePropertyMapping("amount", "Order Amount")
+                .addSimplePropertyMapping("date", "Order Date")
+                .withDateFormat("dd/MM/yyyy hh:mm")
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
+                .addUniqueEntityConfiguration(DuplicateEntityPolicy.UPDATE, 'orderNumber', 'customer.name')
+                .build()
+
+        def xlsxContent = resources.getResourceAsStream("/test_support/input_data_files/xlsx/duplicate_orders.xlsx")
+
+        when: 'data imported'
+        def importResult = dataImporter.importData(configuration, xlsxContent)
+
+        then:
+        importResult.success
+        importResult.importedEntityIds.size() == 2
+        def firstOrder = loadEntity(Order, importResult.importedEntityIds[0], FetchPlan.BASE) as Order
+        checkOrder(firstOrder, '#0001', '12/12/2020 12:30', 150)
+        checkCustomer(firstOrder.customer, 'Tom Smith', null, null)
+
+        def secondOrder = loadEntity(Order, importResult.importedEntityIds[1], FetchPlan.BASE) as Order
+        checkOrder(secondOrder, '#0001', '12/12/2020 12:30', 100)
+        checkCustomer(secondOrder.customer, 'John Dow', null, null)
+    }
+
+    def 'test unique entity configuration with SKIP policy'() {
+        given:
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.CREATE_IF_MISSING)
+                        .addSimplePropertyMapping('name', 'Customer Name')
+                        .addSimplePropertyMapping('email', 'Customer Email')
+                        .lookupByAllSimpleProperties()
+                        .build())
+                .addSimplePropertyMapping("orderNumber", "Order Num")
+                .addSimplePropertyMapping("amount", "Order Amount")
+                .addSimplePropertyMapping("date", "Order Date")
+                .withDateFormat("dd/MM/yyyy hh:mm")
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
+                .addUniqueEntityConfiguration(DuplicateEntityPolicy.SKIP, 'orderNumber', 'customer.name')
+                .build()
+
+        def xlsxContent = resources.getResourceAsStream("/test_support/input_data_files/xlsx/duplicate_orders.xlsx")
+
+        when: 'data imported'
+        def importResult = dataImporter.importData(configuration, xlsxContent)
+
+        then:
+        importResult.success
+        importResult.importedEntityIds.size() == 2
+        importResult.failedEntities.size() == 1
+
+        def firstOrder = loadEntity(Order, importResult.importedEntityIds[0], FetchPlan.BASE) as Order
+        checkOrder(firstOrder, '#0001', '12/12/2020 12:30', 100)
+        checkCustomer(firstOrder.customer, 'Tom Smith', null, null)
+
+        def secondOrder = loadEntity(Order, importResult.importedEntityIds[1], FetchPlan.BASE) as Order
+        checkOrder(secondOrder, '#0001', '12/12/2020 12:30', 100)
+        checkCustomer(secondOrder.customer, 'John Dow', null, null)
+
+        importResult.failedEntities[0].errorType == EntityImportErrorType.UNIQUE_VIOLATION
+        def failedOrder =  importResult.failedEntities[0].entity as Order
+        checkOrder(failedOrder, '#0001', '12/12/2020 12:30', 150)
+        checkCustomer(failedOrder.customer, 'Tom Smith', null, null)
+    }
+
+    def 'test unique entity configuration with ABORT policy'() {
+        given:
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.CREATE_IF_MISSING)
+                        .addSimplePropertyMapping('name', 'Customer Name')
+                        .addSimplePropertyMapping('email', 'Customer Email')
+                        .lookupByAllSimpleProperties()
+                        .build())
+                .addSimplePropertyMapping("orderNumber", "Order Num")
+                .addSimplePropertyMapping("amount", "Order Amount")
+                .addSimplePropertyMapping("date", "Order Date")
+                .withDateFormat("dd/MM/yyyy hh:mm")
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
+                .addUniqueEntityConfiguration(DuplicateEntityPolicy.ABORT, 'orderNumber', 'customer.name')
+                .build()
+
+        def xlsxContent = resources.getResourceAsStream("/test_support/input_data_files/xlsx/duplicate_orders.xlsx")
+
+        when: 'data imported'
+        def importResult = dataImporter.importData(configuration, xlsxContent)
+
+        then:
+        !importResult.success
+        importResult.importedEntityIds.size() == 2
+        importResult.errorMessage != null
+
+        def firstOrder = loadEntity(Order, importResult.importedEntityIds[0], FetchPlan.BASE) as Order
+        checkOrder(firstOrder, '#0001', '12/12/2020 12:30', 100)
+        checkCustomer(firstOrder.customer, 'Tom Smith', null, null)
+
+        def secondOrder = loadEntity(Order, importResult.importedEntityIds[1], FetchPlan.BASE) as Order
+        checkOrder(secondOrder, '#0001', '12/12/2020 12:30', 100)
+        checkCustomer(secondOrder.customer, 'John Dow', null, null)
     }
 }
