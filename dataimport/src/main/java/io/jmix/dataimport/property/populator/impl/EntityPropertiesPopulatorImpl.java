@@ -54,8 +54,8 @@ public class EntityPropertiesPopulatorImpl implements EntityPropertiesPopulator 
                                          ImportConfiguration importConfiguration,
                                          ImportedDataItem dataItem,
                                          @Nullable Map<PropertyMapping, List<Object>> createdReferences) {
-        importConfiguration.getPropertyMappings().forEach(propertyMapping -> populateProperty(entity, propertyMapping, importConfiguration,
-                dataItem, createdReferences));
+        importConfiguration.getPropertyMappings()
+                .forEach(propertyMapping -> populateProperty(entity, propertyMapping, importConfiguration, dataItem, createdReferences));
         return new EntityInfo(entity)
                 .setCreatedReferences(getCreatedReferences(entity, importConfiguration));
     }

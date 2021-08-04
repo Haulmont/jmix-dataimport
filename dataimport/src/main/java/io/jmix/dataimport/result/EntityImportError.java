@@ -20,6 +20,15 @@ import io.jmix.dataimport.extractor.data.ImportedDataItem;
 
 import javax.annotation.Nullable;
 
+/**
+ * An object that contains the following details if an entity import fails:
+ * <ul>
+ *     <li>An instance of {@link ImportedDataItem}</li>
+ *     <li>Extracted entity</li>
+ *     <li>Error message</li>
+ *     <li>Error type: {@link EntityImportErrorType}</li>
+ * </ul>
+ */
 public class EntityImportError {
     protected ImportedDataItem importedDataItem;
 

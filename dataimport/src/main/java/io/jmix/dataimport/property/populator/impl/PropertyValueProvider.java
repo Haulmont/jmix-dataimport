@@ -44,59 +44,58 @@ public class PropertyValueProvider {
     protected Metadata metadata;
 
     @Nullable
-    public Object getSimpleValue(Object entity,
+    public Object getSimpleValue(Object propertyOwnerEntity,
                                  ImportConfiguration importConfiguration,
                                  PropertyMapping propertyMapping,
                                  RawValuesSource rawValuesSource) {
         if (propertyMapping instanceof CustomPropertyMapping) {
             return customValueProvider.getValue((CustomPropertyMapping) propertyMapping, importConfiguration, getRawValueSource(rawValuesSource, propertyMapping));
         } else if (propertyMapping instanceof SimplePropertyMapping) {
-            PropertyMappingContext propertyMappingContext = createContext(entity, importConfiguration, propertyMapping, rawValuesSource);
+            PropertyMappingContext propertyMappingContext = createContext(propertyOwnerEntity, importConfiguration, propertyMapping, rawValuesSource);
             return simplePropertyValueProvider.getValue(propertyMappingContext);
         }
-
         return null;
     }
 
     @Nullable
-    public Object getReferenceValue(Object entity,
+    public Object getReferenceValue(Object propertyOwnerEntity,
                                     ImportConfiguration importConfiguration,
                                     PropertyMapping propertyMapping,
                                     RawValuesSource rawValuesSource,
                                     @Nullable Map<PropertyMapping, List<Object>> createdReferences) {
 
         if (propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
-            return processMultiFieldMapping(entity, importConfiguration, propertyMapping, rawValuesSource, createdReferences);
+            return processMultiFieldMapping(propertyOwnerEntity, importConfiguration, propertyMapping, rawValuesSource, createdReferences);
         } else if (propertyMapping instanceof ReferencePropertyMapping) {
-            PropertyMappingContext propertyMappingContext = createContext(entity, importConfiguration, propertyMapping, rawValuesSource);
+            PropertyMappingContext propertyMappingContext = createContext(propertyOwnerEntity, importConfiguration, propertyMapping, rawValuesSource);
             return referenceValueProvider.getSingleEntity(propertyMappingContext, getCreatedReferences(propertyMapping, createdReferences));
         }
         return null;
     }
 
     @Nullable
-    protected Object processMultiFieldMapping(Object entity,
+    protected Object processMultiFieldMapping(Object propertyOwnerEntity,
                                               ImportConfiguration importConfiguration,
                                               PropertyMapping propertyMapping,
                                               RawValuesSource rawValuesSource,
                                               @Nullable Map<PropertyMapping, List<Object>> createdReferences) {
-        PropertyMappingContext propertyMappingContext = createContext(entity, importConfiguration, propertyMapping, getRawValueSource(rawValuesSource, propertyMapping));
+        PropertyMappingContext propertyMappingContext = createContext(propertyOwnerEntity, importConfiguration, propertyMapping, getRawValueSource(rawValuesSource, propertyMapping));
         boolean isCollection = propertyMappingContext.getMetaProperty().getRange().getCardinality().isMany();
-        if (!isCollection) {
-            return referenceValueProvider.getSingleEntity(propertyMappingContext, getCreatedReferences(propertyMapping, createdReferences));
+        if (isCollection) {
+            return referenceValueProvider.getEntityCollection(propertyOwnerEntity, propertyMappingContext);
         } else {
-            return referenceValueProvider.getEntityCollection(entity, propertyMappingContext);
+            return referenceValueProvider.getSingleEntity(propertyMappingContext, getCreatedReferences(propertyMapping, createdReferences));
         }
     }
 
 
-    protected PropertyMappingContext createContext(Object entity, ImportConfiguration importConfiguration,
+    protected PropertyMappingContext createContext(Object propertyOwnerEntity, ImportConfiguration importConfiguration,
                                                    PropertyMapping propertyMapping,
                                                    RawValuesSource rawValuesSource) {
         return new PropertyMappingContext(propertyMapping)
                 .setImportConfiguration(importConfiguration)
                 .setRawValuesSource(rawValuesSource)
-                .setOwnerEntityMetaClass(metadata.getClass(entity));
+                .setOwnerEntityMetaClass(metadata.getClass(propertyOwnerEntity));
     }
 
     protected RawValuesSource getRawValueSource(RawValuesSource rawValuesSource, PropertyMapping propertyMapping) {

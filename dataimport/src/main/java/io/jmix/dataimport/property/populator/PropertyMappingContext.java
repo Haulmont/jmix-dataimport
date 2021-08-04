@@ -24,6 +24,9 @@ import io.jmix.dataimport.configuration.mapping.PropertyMapping;
 
 import javax.annotation.Nullable;
 
+/**
+ * An object that contains info to get a result value of an entity property from the raw value
+ */
 public class PropertyMappingContext {
     protected ImportConfiguration importConfiguration;
     protected RawValuesSource rawValuesSource;

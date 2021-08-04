@@ -16,7 +16,18 @@
 
 package io.jmix.dataimport.configuration;
 
-
+/**
+ * Available policies to process a found duplicate:
+ * <ol>
+ *     <li>Update: an extracted entity not imported, existing one is updated.
+ *     Properties of an existing entity are populated by values from input data as for extracted entity.
+ *     </li>
+ *     <li>Skip: an extracted entity not imported, existing one is not changed</li>
+ *     <li>Abort: the import process is aborted immediately.
+ *     <b>Note:</b> depending on the ImportTransactionStrategy the result of the import process differs:
+ *     no one entity imported (single transaction) or entities, before the entity for which the duplicate found, are imported (transaction per entity)</li>
+ * </ol>
+ */
 public enum DuplicateEntityPolicy {
     SKIP,
     UPDATE,

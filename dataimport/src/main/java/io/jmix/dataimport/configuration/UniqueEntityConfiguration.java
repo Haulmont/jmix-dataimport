@@ -18,6 +18,14 @@ package io.jmix.dataimport.configuration;
 
 import java.util.List;
 
+/**
+ * Allows configuring how to process a case if the entity with the same values of the particular properties already exists.
+ * To create an instance of UniqueEntityConfiguration, it is required to specify:
+ * <ul>
+ *     <li>Entity property names: names of the properties by which values the duplicate entity will be searched</li>
+ *     <li>Duplicate entity policy: policy to process a found duplicate</li>
+ * </ul>
+ */
 public class UniqueEntityConfiguration {
     protected List<String> entityPropertyNames;
     protected DuplicateEntityPolicy duplicateEntityPolicy;

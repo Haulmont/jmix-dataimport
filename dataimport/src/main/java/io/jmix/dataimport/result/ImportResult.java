@@ -19,6 +19,15 @@ package io.jmix.dataimport.result;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * An object that contains the following information about the import execution result:
+ * <ul>
+ *     <li>Success: whether entities import is executed successfully or not</li>
+ *     <li>List of entity ids that are successfully imported</li>
+ *     <li>List of {@link EntityImportError}s created for not imported entities</li>
+ *     <li>Error message</li>
+ * </ul>
+ */
 public class ImportResult {
     protected boolean success = true;
 

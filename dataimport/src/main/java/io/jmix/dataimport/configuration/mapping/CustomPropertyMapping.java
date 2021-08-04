@@ -22,6 +22,8 @@ import java.util.function.Function;
 
 /**
  * Mapping for entity property that has a custom value calculated by specified function.
+ *
+ * @see CustomMappingContext
  */
 public class CustomPropertyMapping implements PropertyMapping {
     protected String entityPropertyName;

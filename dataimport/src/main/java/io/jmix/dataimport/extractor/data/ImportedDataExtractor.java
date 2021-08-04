@@ -26,7 +26,21 @@ import java.io.InputStream;
  */
 public interface ImportedDataExtractor {
 
+    /**
+     * Parses input data specified as input stream and creates an instance of {@link ImportedData}.
+     *
+     * @param importConfiguration import configuration
+     * @param inputStream input data
+     * @return an instance of {@link ImportedData} containing list of {@link ImportedDataItem} with raw values for entity properties
+     */
     ImportedData extract(ImportConfiguration importConfiguration, InputStream inputStream);
 
+    /**
+     * Parses input data specified as a byte array and creates an instance of {@link ImportedData}.
+     *
+     * @param importConfiguration import configuration
+     * @param inputData input data
+     * @return an instance of {@link ImportedData} containing list of {@link ImportedDataItem} with raw values for entity properties
+     */
     ImportedData extract(ImportConfiguration importConfiguration, byte[] inputData);
 }

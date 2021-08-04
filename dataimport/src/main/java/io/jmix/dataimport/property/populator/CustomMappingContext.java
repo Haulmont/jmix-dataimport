@@ -17,9 +17,15 @@
 package io.jmix.dataimport.property.populator;
 
 import io.jmix.dataimport.configuration.ImportConfiguration;
+import io.jmix.dataimport.configuration.mapping.CustomPropertyMapping;
 
 import java.util.Map;
 
+/**
+ * Input parameter for a function to get a custom value of property.
+ *
+ * @see CustomPropertyMapping
+ */
 public class CustomMappingContext {
     protected ImportConfiguration importConfiguration;
     protected Map<String, Object> rawValues;

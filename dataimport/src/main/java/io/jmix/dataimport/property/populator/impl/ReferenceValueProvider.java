@@ -89,8 +89,6 @@ public class ReferenceValueProvider {
             ReferenceImportPolicy referenceImportPolicy = referenceMapping.getReferenceImportPolicy();
             if (referenceImportPolicy == ReferenceImportPolicy.CREATE) {
                 return referenceCreator.createOneToManyCollection(entityToPopulate, context);
-            } else if (referenceImportPolicy == ReferenceImportPolicy.IGNORE_IF_MISSING) {
-                logIgnoredReference(context);
             }
         }
         return null;

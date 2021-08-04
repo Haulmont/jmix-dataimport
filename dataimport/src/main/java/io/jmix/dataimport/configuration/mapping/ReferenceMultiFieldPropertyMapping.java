@@ -106,17 +106,42 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
             this.referenceImportPolicy = referenceImportPolicy;
         }
 
+        /**
+         * Adds a mapping for specified simple property.
+         *
+         * @param entityPropertyName entity property name
+         * @param dataFieldName      name of the field from input data that contains a raw value of property
+         * @return current instance of builder
+         */
         public Builder addSimplePropertyMapping(String entityPropertyName, String dataFieldName) {
             this.referencePropertyMappings.add(new SimplePropertyMapping(entityPropertyName, dataFieldName));
             return this;
         }
 
+        /**
+         * Adds a custom mapping for property.
+         *
+         * @param entityPropertyName  entity property name
+         * @param customValueFunction function to get value for the
+         * @return current instance of builder
+         */
         public Builder addCustomPropertyMapping(String entityPropertyName,
                                                 Function<CustomMappingContext, Object> customValueFunction) {
             this.referencePropertyMappings.add(new CustomPropertyMapping(entityPropertyName, customValueFunction));
             return this;
         }
 
+        /**
+         * Creates and adds a property mapping for the reference property mapped by one data field.
+         *
+         * @param entityPropertyName reference property name
+         * @param dataFieldName      name of the field from input data that contains a raw value of lookup property
+         * @param lookupPropertyName property name from the reference entity
+         * @param policy             reference import policy
+         * @return current instance of builder
+         *
+         * @see ReferencePropertyMapping
+         */
         public Builder addReferencePropertyMapping(String entityPropertyName,
                                                    String dataFieldName,
                                                    String lookupPropertyName,
@@ -125,11 +150,31 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
             return this;
         }
 
+        /**
+         * Adds specified property mapping. Property mapping can be:
+         * <ul>
+         *     <li>{@link SimplePropertyMapping}</li>
+         *     <li>{@link CustomPropertyMapping}</li>
+         *     <li>{@link ReferencePropertyMapping}</li>
+         *     <li>{@link ReferenceMultiFieldPropertyMapping}</li>
+         * </ul>
+         *
+         * @param propertyMapping property mapping
+         * @return current instance of builder
+         *
+         * @see ReferenceMultiFieldPropertyMapping.Builder
+         */
         public Builder addPropertyMapping(PropertyMapping propertyMapping) {
             this.referencePropertyMappings.add(propertyMapping);
             return this;
         }
 
+        /**
+         * Sets names of the properties by which an existing entity will be searched
+         *
+         * @param lookupPropertyNames names of the properties by which an existing entity will be searched
+         * @return current instance of builder
+         */
         public Builder withLookupPropertyNames(List<String> lookupPropertyNames) {
             this.lookupPropertyNames = lookupPropertyNames;
             return this;
@@ -145,11 +190,25 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
             return this;
         }
 
+        /**
+         * Sets names of the properties by which an existing entity will be searched
+         *
+         * @param lookupPropertyNames names of the properties by which an existing entity will be searched
+         * @return current instance of builder
+         */
         public Builder withLookupPropertyNames(String... lookupPropertyNames) {
             this.lookupPropertyNames = Arrays.asList(lookupPropertyNames);
             return this;
         }
 
+        /**
+         * Sets a data field name.
+         * <br/>
+         * <b>Note:</b> actual for JSON/XML formats
+         *
+         * @param dataFieldName field/tag name from the input data that has raw values of the reference entity properties
+         * @return current instance of builder
+         */
         public Builder withDataFieldName(String dataFieldName) {
             this.dataFieldName = dataFieldName;
             return this;

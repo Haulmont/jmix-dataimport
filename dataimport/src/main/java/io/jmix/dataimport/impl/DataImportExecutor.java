@@ -56,6 +56,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Executes import for a given import configuration and {@link ImportedData}.
+ */
 @Component("datimp_DataImportExecutor")
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class DataImportExecutor {
@@ -106,7 +109,6 @@ public class DataImportExecutor {
 
     public void importInOneTransaction() {
         try {
-            importResult.setSuccess(true);
             List<EntityExtractionResult> extractionResults = null;
             try {
                 extractionResults = entityExtractor.extractEntities(importConfiguration, importedData);
