@@ -52,7 +52,7 @@ class DataImportSpec extends Specification {
 
         def customer2 = dataManager.create(Customer)
         customer2.name = 'Shelby Robinson'
-        customer2.email = 'robinson@mail.com'
+        customer2.email = 's.robinson@mail.com'
         customer2.grade = CustomerGrade.SILVER
 
         dataManager.save(customer1, customer2)
@@ -104,7 +104,7 @@ class DataImportSpec extends Specification {
                 .orElse(null)
     }
 
-    def checkOrder(Order order, String orderNumber, String date, def amount) {
+    static def checkOrder(Order order, String orderNumber, String date, def amount) {
         order.orderNumber == orderNumber
         if (date != null) {
             order.date == DateUtils.parseDate(date, 'dd/MM/yyyy HH:mm')
@@ -115,14 +115,14 @@ class DataImportSpec extends Specification {
     }
 
 
-    def checkCustomer(Customer customer, String name, String email, CustomerGrade grade) {
+    static def checkCustomer(Customer customer, String name, String email, CustomerGrade grade) {
         customer != null
         customer.name == name
         customer.email == email
         customer.grade == grade
     }
 
-    def checkPaymentDetails(PaymentDetails paymentDetails, String date, PaymentType paymentType, String bonusCardNumber, BigDecimal bonusAmount) {
+    static def checkPaymentDetails(PaymentDetails paymentDetails, String date, PaymentType paymentType, String bonusCardNumber, BigDecimal bonusAmount) {
         paymentDetails != null
         paymentDetails.date == DateUtils.parseDate(date, 'dd/MM/yyyy HH:mm')
         paymentDetails.paymentType == paymentType
@@ -135,13 +135,13 @@ class DataImportSpec extends Specification {
         paymentDetails.bonusAmount == bonusAmount
     }
 
-    def checkDeliveryDetails(DeliveryDetails deliveryDetails, String date, String fullAddress) {
+    static def checkDeliveryDetails(DeliveryDetails deliveryDetails, String date, String fullAddress) {
         deliveryDetails != null
         deliveryDetails.deliveryDate == DateUtils.parseDate(date, 'dd/MM/yyyy HH:mm')
         deliveryDetails.fullAddress == fullAddress
     }
 
-    def checkOrderLine(OrderLine orderLine, String productName, Integer quantity) {
+    static def checkOrderLine(OrderLine orderLine, String productName, Integer quantity) {
         orderLine != null
         if (productName != null) {
             orderLine.product != null
@@ -152,14 +152,14 @@ class DataImportSpec extends Specification {
         orderLine.quantity == quantity
     }
 
-    def checkProduct(Product product, String name, BigDecimal price, Boolean special) {
+    static def checkProduct(Product product, String name, BigDecimal price, Boolean special) {
         product != null
         product.name == name
         product.price == price
         product.special == special
     }
 
-    def checkBonusCard(BonusCard bonusCard, String cardNumber, Boolean isActive, BigDecimal balance) {
+    static def checkBonusCard(BonusCard bonusCard, String cardNumber, Boolean isActive, BigDecimal balance) {
         bonusCard != null
         bonusCard.cardNumber == cardNumber
         bonusCard.isActive == isActive

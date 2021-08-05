@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 /**
  * Represents a source of raw values for properties for one entity to import.
- * <br/>
+ * <br>
  * Contains the following info:
  * <ul>
  *     <li>Item index:
@@ -54,9 +54,8 @@ public class ImportedDataItem implements RawValuesSource {
         return rawValues;
     }
 
-    public ImportedDataItem setItemIndex(int itemIndex) {
+    public void setItemIndex(int itemIndex) {
         this.itemIndex = itemIndex;
-        return this;
     }
 
     public void setRawValues(Map<String, Object> rawValues) {

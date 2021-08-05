@@ -105,7 +105,7 @@ public class ImportConfigurationBuilder {
     /**
      * Creates and adds a {@link UniqueEntityConfiguration}.
      *
-     * @param policy policy which be applied for found duplicates
+     * @param policy              policy which be applied for found duplicates
      * @param entityPropertyNames names of the entity properties by which values the duplicates will be searched
      * @return current instance of builder
      */
@@ -117,7 +117,7 @@ public class ImportConfigurationBuilder {
     /**
      * Creates and adds a {@link UniqueEntityConfiguration}.
      *
-     * @param policy policy which be applied for found duplicates
+     * @param policy              policy which be applied for found duplicates
      * @param entityPropertyNames names of the entity properties by which values the duplicates will be searched
      * @return current instance of builder
      */
@@ -145,7 +145,6 @@ public class ImportConfigurationBuilder {
      * @param lookupPropertyName property name from the reference entity
      * @param policy             reference import policy
      * @return current instance of builder
-     *
      * @see ReferencePropertyMapping
      */
     public ImportConfigurationBuilder addReferencePropertyMapping(String entityPropertyName,
@@ -167,7 +166,6 @@ public class ImportConfigurationBuilder {
      *
      * @param propertyMapping property mapping
      * @return current instance of builder
-     *
      * @see ReferenceMultiFieldPropertyMapping.Builder
      */
     public ImportConfigurationBuilder addPropertyMapping(PropertyMapping propertyMapping) {

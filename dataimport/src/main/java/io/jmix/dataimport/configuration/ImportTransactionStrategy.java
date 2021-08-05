@@ -17,14 +17,13 @@
 package io.jmix.dataimport.configuration;
 
 /**
- *  The way how to import the entities:
- *  <ul>
- *      <li>Single transaction: if any entity import fails, the import process fails</li>
- *      <li>Transaction per entity: if any entity import fails, the import process continues</li>
- *  </ul>
- *
+ * The way how to import the entities:
+ * <ul>
+ *     <li>Single transaction: if any entity import fails, the import process fails</li>
+ *     <li>Transaction per entity: if any entity import fails, the import process continues</li>
+ * </ul>
  */
 public enum ImportTransactionStrategy {
     SINGLE_TRANSACTION,
-    TRANSACTION_PER_ENTITY;
+    TRANSACTION_PER_ENTITY
 }

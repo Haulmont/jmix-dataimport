@@ -18,9 +18,9 @@ package io.jmix.dataimport.property.populator;
 
 import io.jmix.core.metamodel.model.MetaClass;
 import io.jmix.core.metamodel.model.MetaProperty;
-import io.jmix.dataimport.extractor.data.RawValuesSource;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
+import io.jmix.dataimport.extractor.data.RawValuesSource;
 
 import javax.annotation.Nullable;
 

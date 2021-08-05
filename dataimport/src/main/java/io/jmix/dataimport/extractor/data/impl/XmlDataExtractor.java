@@ -23,7 +23,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
-import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Component("datimp_XmlDataExtractor")
 public class XmlDataExtractor implements ImportedDataExtractor {
 
     @Override

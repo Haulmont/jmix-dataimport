@@ -208,7 +208,6 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
                         .addSimplePropertyMapping("quantity", "Quantity")
                         .build())
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
-                .addUniqueEntityConfiguration(DuplicateEntityPolicy.UPDATE, "orderNumber", "date", "amount", "customer.name")
                 .withDateFormat("dd/MM/yyyy HH:mm")
                 .build()
 
@@ -228,10 +227,8 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         checkPaymentDetails(order1.paymentDetails, '12/02/2021 12:00', PaymentType.CASH, null, 10 as BigDecimal)
 
         order1.lines != null
-        order1.lines.size() == 2
-        order1.lines.sort(orderLine -> orderLine.quantity)
-        checkOrderLine(order1.lines[0], 'Outback Power Nano-Carbon Battery 12V', 4)
-        checkOrderLine(order1.lines[1], 'Fullriver Sealed Battery 6V', 5)
+        order1.lines.size() == 1
+        checkOrderLine(order1.lines[0], 'Fullriver Sealed Battery 6V', 5)
 
         def order2 = loadEntity(Order, result.importedEntityIds[1], "order-full") as Order
         checkOrder(order2, '#123', '23/03/2021 18:00', 6.25)
@@ -285,7 +282,7 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
                         .addSimplePropertyMapping('date', 'orderDate')
                         .lookupByAllSimpleProperties()
                         .build())
-                .addReferencePropertyMapping('product', "productName", 'name',  ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping('product', "productName", 'name', ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .addSimplePropertyMapping("quantity", "quantity")
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
@@ -315,7 +312,7 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         given:
         def importConfig = ImportConfiguration.builder(OrderLine, InputDataFormat.XML)
                 .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", "productName",  "name", ReferenceImportPolicy.FAIL_IF_MISSING)
+                .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.FAIL_IF_MISSING)
                 .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('order', ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping('date', 'orderDate')
                         .addSimplePropertyMapping('orderNumber', 'orderNumber')
@@ -414,7 +411,7 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         checkCustomer(secondOrder.customer, 'John Dow', null, null)
 
         importResult.failedEntities[0].errorType == EntityImportErrorType.UNIQUE_VIOLATION
-        def failedOrder =  importResult.failedEntities[0].entity as Order
+        def failedOrder = importResult.failedEntities[0].entity as Order
         checkOrder(failedOrder, '#0001', '12/12/2020 12:30', 150)
         checkCustomer(failedOrder.customer, 'Tom Smith', null, null)
     }

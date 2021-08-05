@@ -16,10 +16,8 @@
 
 package io.jmix.dataimport.impl;
 
-import io.jmix.core.DataManager;
 import io.jmix.dataimport.DataImporter;
 import io.jmix.dataimport.configuration.ImportConfiguration;
-import io.jmix.dataimport.configuration.ImportConfigurationValidator;
 import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
 import io.jmix.dataimport.extractor.data.ImportedDataExtractors;
@@ -37,8 +35,6 @@ public class DataImporterImpl implements DataImporter {
     protected static final Logger log = LoggerFactory.getLogger(DataImporter.class);
     @Autowired
     protected ImportedDataExtractors importedDataExtractors;
-    @Autowired
-    protected DataManager dataManager;
     @Autowired
     protected ObjectProvider<DataImportExecutor> dataImportExecutors;
     @Autowired

@@ -72,13 +72,12 @@ public class SimplePropertyValueProvider {
     @Nullable
     protected Enum getEnumValue(Object rawValue, Class<Enum> javaType) {
         if (isStringValue(rawValue)) {
-            Class<Enum> enumClass = javaType;
             String enumValue = ((String) rawValue).toUpperCase();
-            if (enumClass.isEnum()) {
+            if (javaType.isEnum()) {
                 try {
-                    return Enum.valueOf(enumClass, enumValue);
+                    return Enum.valueOf(javaType, enumValue);
                 } catch (IllegalArgumentException e) {
-                    log.info(String.format("Enum value could not be found: %s for Enum: '%s'. Will be ignored", enumValue, enumClass.getSimpleName()));
+                    log.info(String.format("Enum value could not be found: %s for Enum: '%s'. Will be ignored", enumValue, javaType.getSimpleName()));
                     log.debug("Details: ", e);
                 }
             }

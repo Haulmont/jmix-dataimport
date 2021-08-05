@@ -21,8 +21,6 @@ import io.jmix.dataimport.extractor.data.impl.CsvDataExtractor;
 import io.jmix.dataimport.extractor.data.impl.ExcelDataExtractor;
 import io.jmix.dataimport.extractor.data.impl.JsonDataExtractor;
 import io.jmix.dataimport.extractor.data.impl.XmlDataExtractor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -31,17 +29,14 @@ import java.util.Map;
 
 @Component("datimp_ImportedDataExtractors")
 public class ImportedDataExtractors {
-    @Autowired
-    protected ApplicationContext applicationContext;
-
     protected Map<String, ImportedDataExtractor> extractorsByInputFormats = new HashMap<>();
 
     @PostConstruct
     protected void init() {
-        extractorsByInputFormats.put(InputDataFormat.CSV, applicationContext.getBean(CsvDataExtractor.class));
-        extractorsByInputFormats.put(InputDataFormat.XLSX, applicationContext.getBean(ExcelDataExtractor.class));
-        extractorsByInputFormats.put(InputDataFormat.JSON, applicationContext.getBean(JsonDataExtractor.class));
-        extractorsByInputFormats.put(InputDataFormat.XML, applicationContext.getBean(XmlDataExtractor.class));
+        extractorsByInputFormats.put(InputDataFormat.CSV, new CsvDataExtractor());
+        extractorsByInputFormats.put(InputDataFormat.XLSX, new ExcelDataExtractor());
+        extractorsByInputFormats.put(InputDataFormat.JSON, new JsonDataExtractor());
+        extractorsByInputFormats.put(InputDataFormat.XML, new XmlDataExtractor());
         addCustomExtractors();
     }
 

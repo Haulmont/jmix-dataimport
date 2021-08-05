@@ -16,16 +16,15 @@
 
 package value_provider
 
-
 import io.jmix.core.common.util.ParamsMap
 import io.jmix.dataimport.InputDataFormat
 import io.jmix.dataimport.configuration.ImportConfiguration
+import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
-import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
 import io.jmix.dataimport.extractor.data.ImportedDataItem
 import io.jmix.dataimport.extractor.data.ImportedObject
 import io.jmix.dataimport.extractor.data.ImportedObjectList
-import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
+import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
 import test_support.entity.Customer
@@ -110,17 +109,16 @@ class OneToManyReferenceCreationTest extends DataImportSpec {
     }
 
     def 'test creation of nested one-to-many associations without separate imported object list'() {
-        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)
-                .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.IGNORE_IF_MISSING)
-                .build()
-
+        given:
         def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
                 .withDataFieldName('orderLines')
                 .addSimplePropertyMapping("orderNumber", "orderNum")
                 .addSimplePropertyMapping("amount", "orderAmount")
                 .addSimplePropertyMapping("date", "orderDate")
-                .addPropertyMapping(orderLinesPropertyMapping)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)
+                        .addSimplePropertyMapping("quantity", "quantity")
+                        .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                        .build())
                 .build()
 
 
@@ -168,19 +166,18 @@ class OneToManyReferenceCreationTest extends DataImportSpec {
     }
 
     def 'test creation of nested one-to-many associations if all data stores in imported data item'() {
-        def orderLinesPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)
-                .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.IGNORE_IF_MISSING)
-                .build()
-
+        given:
         def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
                 .addSimplePropertyMapping("orderNumber", "orderNum")
                 .addSimplePropertyMapping("amount", "orderAmount")
                 .addSimplePropertyMapping("date", "orderDate")
-                .addPropertyMapping(orderLinesPropertyMapping)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("lines", ReferenceImportPolicy.CREATE)
+                        .addSimplePropertyMapping("quantity", "quantity")
+                        .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.IGNORE_IF_MISSING)
+                        .build())
                 .build()
 
-        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
+        def importConfiguration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "name")
                 .addPropertyMapping(ordersPropertyMapping)
                 .withDateFormat("dd/MM/yyyy hh:mm")
@@ -197,7 +194,7 @@ class OneToManyReferenceCreationTest extends DataImportSpec {
         when: 'entity properties populated'
 
         def customer = dataManager.create(Customer)
-        def entityInfo = entityPropertiesPopulator.populateProperties(customer, configuration, importedDataItem)
+        def entityInfo = entityPropertiesPopulator.populateProperties(customer, importConfiguration, importedDataItem)
 
         then:
         entityInfo.entity == customer

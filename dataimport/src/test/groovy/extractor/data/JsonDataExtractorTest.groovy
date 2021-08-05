@@ -16,14 +16,13 @@
 
 package extractor.data
 
-
 import io.jmix.core.Resources
 import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.exception.ImportException
 import io.jmix.dataimport.extractor.data.ImportedObject
 import io.jmix.dataimport.extractor.data.ImportedObjectList
 import io.jmix.dataimport.extractor.data.impl.JsonDataExtractor
-import io.jmix.dataimport.configuration.ImportConfiguration
 import org.apache.commons.compress.utils.CharsetNames
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
@@ -31,8 +30,8 @@ import test_support.entity.Customer
 import test_support.entity.Product
 
 class JsonDataExtractorTest extends DataImportSpec {
-    @Autowired
-    protected JsonDataExtractor jsonDataExtractor;
+
+    protected JsonDataExtractor jsonDataExtractor = new JsonDataExtractor();
 
     @Autowired
     protected Resources resources;

@@ -17,7 +17,7 @@
 package io.jmix.dataimport.configuration.mapping;
 
 /**
- * <br/>
+ * <br>
  * Available policies for import of reference property:
  * <ul>
  *     <li>Create: the reference is always created. Existing reference is not searched.</li>

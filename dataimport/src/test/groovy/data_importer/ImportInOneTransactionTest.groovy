@@ -155,7 +155,6 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .build())
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
-                .addUniqueEntityConfiguration(DuplicateEntityPolicy.UPDATE, "name", "email")
                 .build()
 
         def csvContent = resources.getResourceAsStream("/test_support/input_data_files/csv/orders.csv")
@@ -165,19 +164,22 @@ class ImportInOneTransactionTest extends DataImportSpec {
 
         then:
         result.success
-        result.importedEntityIds.size() == 2
+        result.importedEntityIds.size() == 3
 
         def customer1 = loadEntity(Customer, result.importedEntityIds[0], "customer-with-orders") as Customer
         customer1.orders != null
-        customer1.orders.size() == 2
-        customer1.orders.sort(order -> order.orderNumber)
+        customer1.orders.size() == 1
         checkOrder(customer1.orders[0], '#123', '12/12/2020 12:30', null)
-        checkOrder(customer1.orders[1], '#4567', '03/05/2021 14:00', null)
 
-        def customer2 = loadEntity(Customer, result.importedEntityIds[1], "customer-with-orders") as Customer
+        def customer2 = loadEntity(Customer, result.importedEntityIds[0], "customer-with-orders") as Customer
         customer2.orders != null
         customer2.orders.size() == 1
-        checkOrder(customer2.orders[0], '#237', '02/04/2021 10:00', null)
+        checkOrder(customer2.orders[0], '#4567', '03/05/2021 14:00', null)
+
+        def customer3 = loadEntity(Customer, result.importedEntityIds[1], "customer-with-orders") as Customer
+        customer3.orders != null
+        customer3.orders.size() == 1
+        checkOrder(customer3.orders[0], '#237', '02/04/2021 10:00', null)
     }
 
     def 'test import with pre-import predicate'() {
@@ -214,6 +216,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
     }
 
     def 'test import with nested references from Excel'() {
+        given:
         def importConfig = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("orderNumber", "Order Number")
                 .addSimplePropertyMapping("date", "Order Date")
@@ -240,7 +243,6 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .lookupByAllSimpleProperties()
                         .build())
                 .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
-                .addUniqueEntityConfiguration(DuplicateEntityPolicy.UPDATE, "orderNumber", "date", "amount", "customer.name", "customer.email")
                 .withDateFormat("dd/MM/yyyy HH:mm")
                 .build()
 
@@ -260,10 +262,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
         checkPaymentDetails(order1.paymentDetails, '12/02/2021 12:00', PaymentType.CASH, null, 10 as BigDecimal)
 
         order1.lines != null
-        order1.lines.size() == 2
-        order1.lines.sort(orderLine -> orderLine.quantity)
-        checkOrderLine(order1.lines[0], 'Outback Power Nano-Carbon Battery 12V', 4)
-        checkOrderLine(order1.lines[1], 'Fullriver Sealed Battery 6V', 5)
+        order1.lines.size() == 1
+        checkOrderLine(order1.lines[0], 'Fullriver Sealed Battery 6V', 5)
 
         def order2 = loadEntity(Order, result.importedEntityIds[1], "order-full") as Order
         checkOrder(order2, '#123', '23/03/2021 18:00', 6.25)
@@ -433,15 +433,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
         def importConfig = new ImportConfiguration(Customer, InputDataFormat.XML)
                 .addPropertyMapping(new SimplePropertyMapping("name", "name"))
                 .addPropertyMapping(new SimplePropertyMapping("email", "email"))
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
-                        .withDataFieldName("order")
-                        .addSimplePropertyMapping("orderNumber", "number")
-                        .addSimplePropertyMapping("date", "date")
-                        .addSimplePropertyMapping("amount", "amount")
-                        .lookupByAllSimpleProperties()
-                        .build())
                 .setTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
-                .addUniqueEntityConfiguration(new UniqueEntityConfiguration(Arrays.asList("name", "email"), DuplicateEntityPolicy.UPDATE))
+                .addUniqueEntityConfiguration(new UniqueEntityConfiguration(Arrays.asList("name"), DuplicateEntityPolicy.UPDATE))
                 .setDateFormat('dd/MM/yyyy HH:mm')
 
 
@@ -457,11 +450,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
 
         def customer1 = loadEntity(Customer, result.importedEntityIds[0], "customer-with-orders") as Customer
         customer1 == customer
-        customer1.orders != null
-        customer1.orders.sort(order -> order.orderNumber)
-        customer1.orders.size() == 2
-        checkOrder(customer1.orders[0], '#001', '12/02/2021 12:00', 50.5)
-        checkOrder(customer1.orders[1], '#002', '12/05/2021 17:00', 25)
+        customer1.email == 'robinson@mail.com'
     }
 
     def 'test unique entity configuration with ABORT policy if duplicate exists in db'() {
@@ -476,7 +465,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .addSimplePropertyMapping("amount", "amount")
                         .build())
                 .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
-                .addUniqueEntityConfiguration(DuplicateEntityPolicy.ABORT, "name", "email")
+                .addUniqueEntityConfiguration(DuplicateEntityPolicy.ABORT, "name")
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .build()
 
@@ -503,7 +492,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .addSimplePropertyMapping("amount", "amount")
                         .build())
                 .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
-                .addUniqueEntityConfiguration(DuplicateEntityPolicy.SKIP, Arrays.asList("name", "email"))
+                .addUniqueEntityConfiguration(DuplicateEntityPolicy.SKIP, Arrays.asList("name"))
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .build()
 

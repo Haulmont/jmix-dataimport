@@ -16,8 +16,6 @@
 
 package io.jmix.dataimport.property.populator.impl;
 
-import io.jmix.core.DataManager;
-import io.jmix.core.Metadata;
 import io.jmix.core.MetadataTools;
 import io.jmix.core.metamodel.model.MetaClass;
 import io.jmix.core.metamodel.model.MetaProperty;
@@ -28,7 +26,6 @@ import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy;
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
 import io.jmix.dataimport.exception.ImportException;
-import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
 import io.jmix.dataimport.property.populator.PropertyMappingContext;
 import io.jmix.dataimport.property.populator.PropertyMappingUtils;
 import org.slf4j.Logger;
@@ -45,19 +42,11 @@ import java.util.Map;
 public class ReferenceValueProvider {
     public static final Logger log = LoggerFactory.getLogger(ReferenceValueProvider.class);
     @Autowired
-    protected SimplePropertyValueProvider simplePropertyValueProvider;
-    @Autowired
     protected MetadataTools metadataTools;
-    @Autowired
-    protected DataManager dataManager;
     @Autowired
     protected ReferenceCreator referenceCreator;
     @Autowired
     protected DuplicateEntityManager duplicateEntityManager;
-    @Autowired
-    protected EntityPropertiesPopulator entityPropertiesPopulator;
-    @Autowired
-    protected Metadata metadata;
     @Autowired
     protected PropertyMappingUtils propertyMappingUtils;
 
@@ -71,9 +60,9 @@ public class ReferenceValueProvider {
         Range.Cardinality cardinality = referenceMetaProperty.getRange().getCardinality();
         switch (cardinality) {
             case MANY_TO_ONE:
-                return processReferenceMapping(context, createdReferences);
+                return processManyToOneReferenceMapping(context, createdReferences);
             case ONE_TO_ONE:
-                return processReferenceMapping(context, null);
+                return processOneToOneReferenceMapping(context);
             default:
                 break;
         }
@@ -88,7 +77,7 @@ public class ReferenceValueProvider {
             ReferenceMultiFieldPropertyMapping referenceMapping = (ReferenceMultiFieldPropertyMapping) context.getPropertyMapping();
             ReferenceImportPolicy referenceImportPolicy = referenceMapping.getReferenceImportPolicy();
             if (referenceImportPolicy == ReferenceImportPolicy.CREATE) {
-                return referenceCreator.createOneToManyCollection(entityToPopulate, context);
+                return referenceCreator.createEntityCollection(entityToPopulate, context);
             }
         }
         return null;
@@ -99,13 +88,44 @@ public class ReferenceValueProvider {
         PropertyMapping referenceMapping = context.getPropertyMapping();
         ReferenceImportPolicy referenceImportPolicy = getReferenceImportPolicy(referenceMapping);
         if (referenceImportPolicy == ReferenceImportPolicy.CREATE) {
-            return referenceCreator.createEmbeddedEntity(context);
+            return referenceCreator.createEntity(context);
         }
         return null;
     }
 
     @Nullable
-    protected Object processReferenceMapping(PropertyMappingContext context, @Nullable List<Object> createdReferences) {
+    protected Object processOneToOneReferenceMapping(PropertyMappingContext context) {
+        PropertyMapping referenceMapping = context.getPropertyMapping();
+        ReferenceImportPolicy referenceImportPolicy = getReferenceImportPolicy(referenceMapping);
+        if (referenceImportPolicy != null) {
+            Object resultValue;
+            if (referenceImportPolicy == ReferenceImportPolicy.CREATE) {
+                resultValue = referenceCreator.createEntity(context);
+            } else {
+                resultValue = loadEntity(context);
+                if (resultValue == null) {
+                    switch (referenceImportPolicy) {
+                        case CREATE_IF_MISSING:
+                            resultValue = referenceCreator.createEntity(context);
+                            break;
+                        case IGNORE_IF_MISSING:
+                            logIgnoredReference(context);
+                            break;
+                        case FAIL_IF_MISSING:
+                            processFailedReference(context);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            return resultValue;
+        }
+        return null;
+    }
+
+    @Nullable
+    protected Object processManyToOneReferenceMapping(PropertyMappingContext context, @Nullable List<Object> createdReferences) {
         PropertyMapping referenceMapping = context.getPropertyMapping();
         ReferenceImportPolicy referenceImportPolicy = getReferenceImportPolicy(referenceMapping);
         if (referenceImportPolicy != null) {

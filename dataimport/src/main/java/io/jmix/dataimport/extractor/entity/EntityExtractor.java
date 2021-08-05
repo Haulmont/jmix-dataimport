@@ -16,9 +16,9 @@
 
 package io.jmix.dataimport.extractor.entity;
 
+import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
-import io.jmix.dataimport.configuration.ImportConfiguration;
 
 import java.util.List;
 
@@ -27,11 +27,11 @@ import java.util.List;
  */
 public interface EntityExtractor {
     /**
-     * Creates an entity using {@link ImportConfiguration#entityMetaClass} and populates the properties for which mappings are set in import configuration.
+     * Creates an entity using {@link ImportConfiguration#entityClass} and populates the properties for which mappings are set in import configuration.
      * Values for the properties are got by processing the raw values from {@link ImportedDataItem}.
      *
      * @param importConfiguration import configuration
-     * @param dataItem source of raw values for the entity
+     * @param dataItem            source of raw values for the entity
      * @return extraction result with entity which properties are populated by values
      */
     EntityExtractionResult extractEntity(ImportConfiguration importConfiguration, ImportedDataItem dataItem);
@@ -40,7 +40,7 @@ public interface EntityExtractor {
      * Creates an entity for each {@link ImportedDataItem} from the specified imported data.
      *
      * @param importConfiguration import configuration
-     * @param importedData imported data
+     * @param importedData        imported data
      * @return extraction results for each unique extracted entity
      */
     List<EntityExtractionResult> extractEntities(ImportConfiguration importConfiguration, ImportedData importedData);

@@ -18,7 +18,7 @@ package io.jmix.dataimport.configuration.mapping;
 
 /**
  * Mapping for reference property by one lookup property that has a raw value in the input data.
- * <br/>
+ * <br>
  * This mapping allows to set:
  * <ul>
  *     <li>Entity property name: name of the reference property</li>

@@ -18,7 +18,6 @@ package io.jmix.dataimport.impl;
 
 import io.jmix.core.DataManager;
 import io.jmix.core.FetchPlan;
-import io.jmix.core.Metadata;
 import io.jmix.core.entity.EntityValues;
 import io.jmix.core.querycondition.LogicalCondition;
 import io.jmix.core.querycondition.PropertyCondition;
@@ -36,8 +35,6 @@ import java.util.Map;
 public class DuplicateEntityManagerImpl implements DuplicateEntityManager {
     @Autowired
     protected DataManager dataManager;
-    @Autowired
-    protected Metadata metadata;
 
     @Override
     public Object load(Object entity, UniqueEntityConfiguration configuration, FetchPlan fetchPlan) {

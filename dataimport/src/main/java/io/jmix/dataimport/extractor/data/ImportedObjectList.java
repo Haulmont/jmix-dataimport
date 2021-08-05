@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
  *     <li>Data field name: for JSON - field name, for XML - tag name</li>
  *     <li>List of {@link ImportedObject}s</li>
  * </ul>
- * <br/>
+ * <br>
  * JSON example:
- * <br/>
+ * <br>
  * The "items" JSON array represents {@link ImportedObjectList} with data field name = "items" and two {@link ImportedObject}s.
  * <pre>
  * [
@@ -50,9 +50,9 @@ import java.util.stream.Collectors;
  *   }
  * ]
  * </pre>
- *
+ * <p>
  * XML example:
- * <br/>
+ * <br>
  * The "items" tag represents {@link ImportedObjectList} with data field name = "items" and two {@link ImportedObject}s.
  * <pre>
  * &lt;orders&gt;

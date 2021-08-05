@@ -49,23 +49,20 @@ public class ImportResult {
         return importedEntityIds;
     }
 
-    public ImportResult setImportedEntityIds(List<Object> importedEntityIds) {
+    public void setImportedEntityIds(List<Object> importedEntityIds) {
         this.importedEntityIds = importedEntityIds;
-        return this;
     }
 
     public List<EntityImportError> getFailedEntities() {
         return failedEntities;
     }
 
-    public ImportResult addImportedEntityId(Object id) {
+    public void addImportedEntityId(Object id) {
         this.importedEntityIds.add(id);
-        return this;
     }
 
-    public ImportResult addFailedEntity(EntityImportError result) {
+    public void addFailedEntity(EntityImportError result) {
         this.failedEntities.add(result);
-        return this;
     }
 
     public String getErrorMessage() {

@@ -16,11 +16,11 @@
 
 package io.jmix.dataimport.property.populator;
 
-import io.jmix.dataimport.extractor.data.RawValuesSource;
-import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.configuration.ImportConfiguration;
-import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
+import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
+import io.jmix.dataimport.extractor.data.ImportedDataItem;
+import io.jmix.dataimport.extractor.data.RawValuesSource;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -34,25 +34,22 @@ public interface EntityPropertiesPopulator {
     /**
      * Populates the entity properties for which mappings are set in the import configuration by values.
      *
-     * @param entity entity which properties are populated by values
+     * @param entity              entity which properties are populated by values
      * @param importConfiguration import configuration
-     * @param dataItem source of raw values of properties
-     *
+     * @param dataItem            source of raw values of properties
      * @return object that contains entity populated by property values and info about created references
      */
     EntityInfo populateProperties(Object entity, ImportConfiguration importConfiguration, ImportedDataItem dataItem);
 
     /**
-     *
-     *Populates the entity properties for which mappings are set in the import configuration by values.
+     * Populates the entity properties for which mappings are set in the import configuration by values.
      * For import policies that require loading of existing reference:
      * Many-to-one reference is created if an existing entity does not exist in the database and is not presented in the created references.
      *
-     * @param entity entity which properties are populated by values
+     * @param entity              entity which properties are populated by values
      * @param importConfiguration import configuration
-     * @param dataItem source of raw values of properties
-     * @param createdReferences map that contains already created reference entity by property mappings
-     *
+     * @param dataItem            source of raw values of properties
+     * @param createdReferences   map that contains already created reference entity by property mappings
      * @return object that contains entity populated by property values and info about created references
      */
     EntityInfo populateProperties(Object entity, ImportConfiguration importConfiguration, ImportedDataItem dataItem,
@@ -61,10 +58,10 @@ public interface EntityPropertiesPopulator {
     /**
      * Populates the reference entity properties for which mappings are set in the reference mapping by values.
      *
-     * @param entity reference entity which properties are populated by values
-     * @param referenceMapping reference mapping
+     * @param entity              reference entity which properties are populated by values
+     * @param referenceMapping    reference mapping
      * @param importConfiguration import configuration
-     * @param rawValuesSource source of raw values of properties
+     * @param rawValuesSource     source of raw values of properties
      * @return reference entity with populated by property values
      */
     Object populateReference(Object entity, ReferenceMultiFieldPropertyMapping referenceMapping, ImportConfiguration importConfiguration, RawValuesSource rawValuesSource);

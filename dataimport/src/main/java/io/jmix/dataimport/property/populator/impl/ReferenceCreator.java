@@ -20,12 +20,10 @@ import io.jmix.core.Metadata;
 import io.jmix.core.entity.EntityValues;
 import io.jmix.core.metamodel.model.MetaClass;
 import io.jmix.core.metamodel.model.MetaProperty;
-import io.jmix.core.metamodel.model.Range;
 import io.jmix.dataimport.DuplicateEntityManager;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
 import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
-import io.jmix.dataimport.extractor.data.ImportedObject;
 import io.jmix.dataimport.extractor.data.ImportedObjectList;
 import io.jmix.dataimport.extractor.data.RawValuesSource;
 import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
@@ -62,73 +60,65 @@ public class ReferenceCreator {
 
     @Nullable
     public Object createEntity(PropertyMappingContext context, @Nullable List<Object> createdReferences) {
-        Range.Cardinality cardinality = context.getMetaProperty().getRange().getCardinality();
-        if (cardinality == Range.Cardinality.MANY_TO_ONE) {
-            return populateReferenceEntity(context, createdReferences, null);
-        } else if (cardinality == Range.Cardinality.ONE_TO_ONE) {
-            return populateReferenceEntity(context, null, null);
-        }
-        return null;
+        Object entityToPopulate = getReferenceEntity(context, createdReferences);
+        return populateReferenceEntity(entityToPopulate, context);
     }
 
     @Nullable
-    public Object createEmbeddedEntity(PropertyMappingContext context) {
-        return populateReferenceEntity(context, null, null);
+    public Object createEntity(PropertyMappingContext context) {
+        Object entityToPopulate = createReferenceEntity(context);
+        return populateReferenceEntity(entityToPopulate, context);
     }
 
     @Nullable
-    public Collection<Object> createOneToManyCollection(Object entityToPopulate, PropertyMappingContext context) {
+    public Collection<Object> createEntityCollection(Object propertyOwnerEntity, PropertyMappingContext context) {
         Object rawValue = context.getRawValue();
 
         String propertyName = context.getPropertyMapping().getEntityPropertyName();
-        Collection<Object> currentValue = EntityValues.getValue(entityToPopulate, propertyName);
+        Collection<Object> currentValue = EntityValues.getValue(propertyOwnerEntity, propertyName);
 
         Collection<Object> resultCollection = currentValue == null ? createEmptyCollection(context.getMetaProperty()) : currentValue;
         if (resultCollection == null) {
-            log.warn(String.format("Not supported type of collection for property [%s] in entity [%s]", propertyName, metadata.getClass(entityToPopulate).getName()));
+            log.warn(String.format("Not supported type of collection for property [%s] in entity [%s]", propertyName, metadata.getClass(propertyOwnerEntity).getName()));
             return null;
         }
 
         if (rawValue == null || rawValue instanceof RawValuesSource) {
-            Object createdEntity = populateReferenceEntity(context, currentValue, null);
-            resultCollection.add(createdEntity);
+            Object referenceEntity = getReferenceEntity(context, currentValue);
+            referenceEntity = populateReferenceEntity(referenceEntity, context);
+            resultCollection.add(referenceEntity);
         } else if (rawValue instanceof ImportedObjectList) {
-            Collection<Object> createdEntities = createEntityCollection(entityToPopulate, context, (ImportedObjectList) rawValue);
+            Collection<Object> createdEntities = createEntityCollection(propertyOwnerEntity, context, (ImportedObjectList) rawValue);
             resultCollection.addAll(createdEntities);
         }
         return resultCollection;
     }
 
-    protected Object populateReferenceEntity(PropertyMappingContext context,
-                                             @Nullable Collection<Object> existingEntities,
-                                             @Nullable ImportedObject newValueSource) {
-        if (newValueSource != null) {
-            context.setRawValuesSource(newValueSource);
+    protected Object populateReferenceEntity(Object referenceEntity, PropertyMappingContext context) {
+        PropertyMapping propertyMapping = context.getPropertyMapping();
+        if (propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
+            return entityPropertiesPopulator.populateReference(referenceEntity, (ReferenceMultiFieldPropertyMapping) propertyMapping,
+                    context.getImportConfiguration(),
+                    context.getRawValuesSource());
+        } else if (propertyMapping instanceof ReferencePropertyMapping) {
+            EntityValues.setValue(referenceEntity, ((ReferencePropertyMapping) propertyMapping).getLookupPropertyName(),
+                    simplePropertyValueProvider.getValue(context));
         }
+        return referenceEntity;
+    }
 
+    protected Object getReferenceEntity(PropertyMappingContext context,
+                                        @Nullable Collection<Object> existingEntities) {
         Object entityToPopulate = null;
         if (CollectionUtils.isNotEmpty(existingEntities)) {
             Map<String, Object> propertyValues = propertyMappingUtils.getPropertyValues(context);
             entityToPopulate = duplicateEntityManager.find(existingEntities, propertyValues);
         }
 
-        if (entityToPopulate == null) {
-            entityToPopulate = createEntity(context);
-        }
-
-        PropertyMapping propertyMapping = context.getPropertyMapping();
-        if (propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
-            return entityPropertiesPopulator.populateReference(entityToPopulate, (ReferenceMultiFieldPropertyMapping) propertyMapping,
-                    context.getImportConfiguration(),
-                    context.getRawValuesSource());
-        } else if (propertyMapping instanceof ReferencePropertyMapping) {
-            EntityValues.setValue(entityToPopulate, ((ReferencePropertyMapping) propertyMapping).getLookupPropertyName(),
-                    simplePropertyValueProvider.getValue(context));
-        }
-        return entityToPopulate;
+        return Optional.ofNullable(entityToPopulate).orElseGet(() -> createReferenceEntity(context));
     }
 
-    protected Object createEntity(PropertyMappingContext context) {
+    protected Object createReferenceEntity(PropertyMappingContext context) {
         MetaClass referenceMetaClass = context.getMetaProperty().getRange().asClass();
         return metadata.create(referenceMetaClass);
     }
@@ -138,7 +128,9 @@ public class ReferenceCreator {
                                                         ImportedObjectList objectList) {
         Collection<Object> createdEntities = new ArrayList<>();
         objectList.getImportedObjects().forEach(importedObject -> {
-            Object createdReference = populateReferenceEntity(context, createdEntities, importedObject);
+            context.setRawValuesSource(importedObject);
+            Object referenceEntity = getReferenceEntity(context, createdEntities);
+            Object createdReference = populateReferenceEntity(referenceEntity, context);
             if (!createdEntities.contains(createdReference)) {
                 createdEntities.add(createdReference);
             }

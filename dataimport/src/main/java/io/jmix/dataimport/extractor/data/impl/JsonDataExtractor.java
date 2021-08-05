@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.exception.ImportException;
 import io.jmix.dataimport.extractor.data.*;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-@Component("datimp_JsonDataExtractor")
 public class JsonDataExtractor implements ImportedDataExtractor {
 
     @Override

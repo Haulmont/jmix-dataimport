@@ -16,14 +16,13 @@
 
 package value_provider
 
-
 import io.jmix.core.common.util.ParamsMap
 import io.jmix.dataimport.InputDataFormat
 import io.jmix.dataimport.configuration.ImportConfiguration
+import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
+import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
 import io.jmix.dataimport.extractor.data.ImportedDataItem
 import io.jmix.dataimport.extractor.data.ImportedObject
-import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping
-import io.jmix.dataimport.configuration.mapping.ReferenceImportPolicy
 import io.jmix.dataimport.property.populator.EntityPropertiesPopulator
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec

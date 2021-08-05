@@ -139,7 +139,6 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
          * @param lookupPropertyName property name from the reference entity
          * @param policy             reference import policy
          * @return current instance of builder
-         *
          * @see ReferencePropertyMapping
          */
         public Builder addReferencePropertyMapping(String entityPropertyName,
@@ -161,7 +160,6 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
          *
          * @param propertyMapping property mapping
          * @return current instance of builder
-         *
          * @see ReferenceMultiFieldPropertyMapping.Builder
          */
         public Builder addPropertyMapping(PropertyMapping propertyMapping) {
@@ -203,7 +201,7 @@ public class ReferenceMultiFieldPropertyMapping implements PropertyMapping {
 
         /**
          * Sets a data field name.
-         * <br/>
+         * <br>
          * <b>Note:</b> actual for JSON/XML formats
          *
          * @param dataFieldName field/tag name from the input data that has raw values of the reference entity properties

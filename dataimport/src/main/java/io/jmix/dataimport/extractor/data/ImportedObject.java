@@ -29,9 +29,9 @@ import java.util.stream.Collectors;
  *     <li>Raw values map: for JSON - raw values of JSON object fields by field names,
  *     for XML: values of child tags by tag names</li>
  * </ul>
- * <br/>
+ * <br>
  * JSON example:
- * <br/>
+ * <br>
  * The "customer" object represents {@link ImportedObject} with data field name = "customer" and two raw values: "name" and "email".
  * <pre>
  * [
@@ -46,9 +46,9 @@ import java.util.stream.Collectors;
  *   }
  * ]
  * </pre>
- *
+ * <p>
  * XML example:
- * <br/>
+ * <br>
  * The "customer" tag represents {@link ImportedObject} with data field name = "customer" and two raw values: "name" and "email".
  * <pre>
  * &lt;orders&gt;

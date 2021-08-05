@@ -17,7 +17,6 @@
 package io.jmix.dataimport.extractor.entity.impl;
 
 import io.jmix.core.Metadata;
-import io.jmix.dataimport.DuplicateEntityManager;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.configuration.mapping.PropertyMapping;
 import io.jmix.dataimport.extractor.data.ImportedData;
@@ -26,9 +25,7 @@ import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
 import io.jmix.dataimport.extractor.entity.EntityExtractor;
 import io.jmix.dataimport.property.populator.EntityInfo;
 import io.jmix.dataimport.property.populator.EntityPropertiesPopulator;
-import io.jmix.dataimport.property.populator.PropertyMappingUtils;
 import io.jmix.dataimport.property.populator.impl.CreatedReference;
-import io.jmix.dataimport.property.populator.impl.SimplePropertyValueProvider;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,12 +38,6 @@ public class EntityExtractorImpl implements EntityExtractor {
     protected Metadata metadata;
     @Autowired
     protected EntityPropertiesPopulator entityPropertiesPopulator;
-    @Autowired
-    protected SimplePropertyValueProvider simplePropertyValueProvider;
-    @Autowired
-    protected PropertyMappingUtils propertyMappingUtils;
-    @Autowired
-    protected DuplicateEntityManager duplicateEntityManager;
 
     @Override
     public EntityExtractionResult extractEntity(ImportConfiguration importConfiguration, ImportedDataItem dataItem) {

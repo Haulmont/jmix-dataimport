@@ -16,8 +16,8 @@
 
 package io.jmix.dataimport;
 
-import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.configuration.ImportConfiguration;
+import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.result.ImportResult;
 
 import java.io.InputStream;

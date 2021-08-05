@@ -44,24 +44,26 @@ public class PropertyValueProvider {
     protected Metadata metadata;
 
     @Nullable
-    public Object getSimpleValue(Object propertyOwnerEntity,
+    public Object getSimpleValue(SimplePropertyMapping propertyMapping,
                                  ImportConfiguration importConfiguration,
-                                 PropertyMapping propertyMapping,
-                                 RawValuesSource rawValuesSource) {
-        if (propertyMapping instanceof CustomPropertyMapping) {
-            return customValueProvider.getValue((CustomPropertyMapping) propertyMapping, importConfiguration, getRawValueSource(rawValuesSource, propertyMapping));
-        } else if (propertyMapping instanceof SimplePropertyMapping) {
-            PropertyMappingContext propertyMappingContext = createContext(propertyOwnerEntity, importConfiguration, propertyMapping, rawValuesSource);
-            return simplePropertyValueProvider.getValue(propertyMappingContext);
-        }
-        return null;
+                                 RawValuesSource rawValuesSource,
+                                 Object propertyOwnerEntity) {
+        PropertyMappingContext propertyMappingContext = createContext(propertyOwnerEntity, importConfiguration, propertyMapping, rawValuesSource);
+        return simplePropertyValueProvider.getValue(propertyMappingContext);
     }
 
     @Nullable
-    public Object getReferenceValue(Object propertyOwnerEntity,
+    public Object getCustomValue(CustomPropertyMapping customPropertyMapping,
+                                 ImportConfiguration importConfiguration,
+                                 RawValuesSource rawValuesSource) {
+        return customValueProvider.getValue(customPropertyMapping, importConfiguration, getRawValueSource(rawValuesSource, customPropertyMapping));
+    }
+
+    @Nullable
+    public Object getReferenceValue(PropertyMapping propertyMapping,
                                     ImportConfiguration importConfiguration,
-                                    PropertyMapping propertyMapping,
                                     RawValuesSource rawValuesSource,
+                                    Object propertyOwnerEntity,
                                     @Nullable Map<PropertyMapping, List<Object>> createdReferences) {
 
         if (propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {

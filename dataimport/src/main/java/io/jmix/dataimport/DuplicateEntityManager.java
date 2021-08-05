@@ -31,9 +31,9 @@ public interface DuplicateEntityManager {
     /**
      * Searches in the database the duplicate for a specified entity by properties from the given {@link UniqueEntityConfiguration}.
      *
-     * @param entity entity for which duplicated is searched
+     * @param entity        entity for which duplicated is searched
      * @param configuration unique entity configuration
-     * @param fetchPlan fetch plan with which the duplicate entity is loaded
+     * @param fetchPlan     fetch plan with which the duplicate entity is loaded
      * @return found duplicate
      */
     @Nullable
@@ -42,8 +42,8 @@ public interface DuplicateEntityManager {
     /**
      * Checks whether specified entities are duplicates by properties from the given {@link UniqueEntityConfiguration}.
      *
-     * @param firstEntity first entity
-     * @param secondEntity second entity
+     * @param firstEntity   first entity
+     * @param secondEntity  second entity
      * @param configuration unique entity configuration
      * @return true if entities are duplicates
      */
@@ -53,7 +53,7 @@ public interface DuplicateEntityManager {
      * Searches an entity in the specified list that has the same property values as in specified map.
      *
      * @param existingEntities entities to search the entity by property values
-     * @param propertyValues property values
+     * @param propertyValues   property values
      * @return found entity
      */
     @Nullable
@@ -62,9 +62,9 @@ public interface DuplicateEntityManager {
     /**
      * Loads an entity by given property values.
      *
-     * @param entityClass class of entity to load
+     * @param entityClass    class of entity to load
      * @param propertyValues property values
-     * @param fetchPlan fetch plan
+     * @param fetchPlan      fetch plan
      * @return loaded entity
      */
     @Nullable

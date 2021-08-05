@@ -20,14 +20,14 @@ import javax.annotation.Nullable;
 
 /**
  * Property mapping describes how to map a field from input data with entity property.
- * <br/>
+ * <br>
  * Basically, a property mapping contains the following info:
  * <ul>
  *     <li>Entity property name: name of the entity property that should be populated by the value</li>
  *     <li>Data field name: a name of the field that contains a raw value for entity property.
- *         <br/>
+ *         <br>
  *         If input data is XLSX or CSV, a name of the field - column header.
- *         <br/>
+ *         <br>
  *         If input data is XML, a name of the field - tag name.
  *     </li>
  * </ul>

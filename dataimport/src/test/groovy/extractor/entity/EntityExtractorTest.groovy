@@ -53,17 +53,15 @@ class EntityExtractorTest extends DataImportSpec {
     }
 
     def 'test entities extraction'() {
-        def ordersPropertyMapping = ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
-                .addSimplePropertyMapping("orderNumber", "orderNum")
-                .addSimplePropertyMapping("amount", "orderAmount")
-                .addSimplePropertyMapping("date", "orderDate")
-                .lookupByAllSimpleProperties()
-                .build()
-
-
+        given:
         def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "name")
-                .addPropertyMapping(ordersPropertyMapping)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
+                        .addSimplePropertyMapping("orderNumber", "orderNum")
+                        .addSimplePropertyMapping("amount", "orderAmount")
+                        .addSimplePropertyMapping("date", "orderDate")
+                        .lookupByAllSimpleProperties()
+                        .build())
                 .withDateFormat("dd/MM/yyyy hh:mm")
                 .build()
 

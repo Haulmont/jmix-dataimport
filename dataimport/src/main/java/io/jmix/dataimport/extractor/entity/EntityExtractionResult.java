@@ -18,9 +18,6 @@ package io.jmix.dataimport.extractor.entity;
 
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class EntityExtractionResult {
     protected ImportedDataItem importedDataItem;
     protected Object entity;
@@ -34,10 +31,10 @@ public class EntityExtractionResult {
         return entity;
     }
 
-    public EntityExtractionResult setEntity(Object entity) {
+    public void setEntity(Object entity) {
         this.entity = entity;
-        return this;
     }
+
     public ImportedDataItem getImportedDataItem() {
         return importedDataItem;
     }

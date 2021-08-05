@@ -31,5 +31,5 @@ package io.jmix.dataimport.configuration;
 public enum DuplicateEntityPolicy {
     SKIP,
     UPDATE,
-    ABORT;
+    ABORT
 }

@@ -18,17 +18,17 @@ package extractor.data
 
 import io.jmix.core.Resources
 import io.jmix.dataimport.InputDataFormat
+import io.jmix.dataimport.configuration.ImportConfiguration
 import io.jmix.dataimport.exception.ImportException
 import io.jmix.dataimport.extractor.data.impl.CsvDataExtractor
-import io.jmix.dataimport.configuration.ImportConfiguration
 import org.apache.commons.io.IOUtils
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
 import test_support.entity.Product
 
 class CsvDataExtractorTest extends DataImportSpec {
-    @Autowired
-    protected CsvDataExtractor csvDataExtractor;
+
+    protected CsvDataExtractor csvDataExtractor = new CsvDataExtractor();
 
     @Autowired
     protected Resources resources;

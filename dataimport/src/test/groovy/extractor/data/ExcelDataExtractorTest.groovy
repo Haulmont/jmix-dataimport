@@ -16,19 +16,18 @@
 
 package extractor.data
 
-
 import io.jmix.core.Resources
 import io.jmix.dataimport.InputDataFormat
-import io.jmix.dataimport.extractor.data.impl.ExcelDataExtractor
 import io.jmix.dataimport.configuration.ImportConfiguration
+import io.jmix.dataimport.extractor.data.impl.ExcelDataExtractor
 import org.apache.commons.io.IOUtils
 import org.apache.commons.math3.stat.descriptive.summary.Product
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
 
 class ExcelDataExtractorTest extends DataImportSpec {
-    @Autowired
-    protected ExcelDataExtractor excelDataExtractor;
+
+    protected ExcelDataExtractor excelDataExtractor = new ExcelDataExtractor();
 
     @Autowired
     protected Resources resources;

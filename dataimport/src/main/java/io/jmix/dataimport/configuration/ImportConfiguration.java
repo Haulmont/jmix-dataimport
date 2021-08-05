@@ -40,10 +40,10 @@ import java.util.function.Predicate;
  *     <li>Input data charset: this parameter is required if CSV is input data format. Default value: UTF-8.</li>
  *     <li>Unique entity configurations: list of {@link UniqueEntityConfiguration}.</li>
  * </ol>
- * <br/>
+ * <br>
  * Import configuration can be created by constructor or by {@link ImportConfigurationBuilder}.
- * <br/>
- * <>Creation examples: </b>
+ * <br>
+ * Creation examples:
  * <pre>
  * ImportConfiguration importConfiguration = ImportConfiguration.builder(Order.class, InputDataFormat.CSV)
  *                 .addSimplePropertyMapping("orderNumber", "Order Num")
@@ -225,7 +225,7 @@ public class ImportConfiguration {
      * Sets a date format to parse date strings.
      *
      * @param dateFormat date format used in input data
-     * @return  current instance of import configuration
+     * @return current instance of import configuration
      */
     public ImportConfiguration setDateFormat(String dateFormat) {
         this.dateFormat = dateFormat;

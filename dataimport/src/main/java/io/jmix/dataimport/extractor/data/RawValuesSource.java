@@ -41,6 +41,7 @@ public interface RawValuesSource {
      *
      * @param dataFieldName data field name
      * @param rawValue raw value
+     * @return current instance of raw values source
      */
     RawValuesSource addRawValue(String dataFieldName, @Nullable Object rawValue);
 

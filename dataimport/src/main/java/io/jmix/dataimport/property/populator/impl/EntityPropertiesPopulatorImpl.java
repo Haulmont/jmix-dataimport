@@ -17,12 +17,9 @@
 package io.jmix.dataimport.property.populator.impl;
 
 import io.jmix.core.EntityStates;
-import io.jmix.core.Metadata;
 import io.jmix.core.entity.EntityValues;
 import io.jmix.dataimport.configuration.ImportConfiguration;
-import io.jmix.dataimport.configuration.mapping.PropertyMapping;
-import io.jmix.dataimport.configuration.mapping.ReferenceMultiFieldPropertyMapping;
-import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
+import io.jmix.dataimport.configuration.mapping.*;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.extractor.data.RawValuesSource;
 import io.jmix.dataimport.property.populator.EntityInfo;
@@ -38,8 +35,6 @@ import java.util.Map;
 
 @Component("datimp_EntityPropertiesPopulator")
 public class EntityPropertiesPopulatorImpl implements EntityPropertiesPopulator {
-    @Autowired
-    protected Metadata metadata;
     @Autowired
     protected EntityStates entityStates;
     @Autowired
@@ -64,11 +59,13 @@ public class EntityPropertiesPopulatorImpl implements EntityPropertiesPopulator 
                                     ImportConfiguration importConfiguration,
                                     RawValuesSource rawValuesSource,
                                     @Nullable Map<PropertyMapping, List<Object>> createdReferences) {
-        Object value;
+        Object value = null;
         if (propertyMapping instanceof ReferencePropertyMapping || propertyMapping instanceof ReferenceMultiFieldPropertyMapping) {
-            value = propertyValueProvider.getReferenceValue(entity, importConfiguration, propertyMapping, rawValuesSource, createdReferences);
-        } else {
-            value = propertyValueProvider.getSimpleValue(entity, importConfiguration, propertyMapping, rawValuesSource);
+            value = propertyValueProvider.getReferenceValue(propertyMapping, importConfiguration, rawValuesSource, entity, createdReferences);
+        } else if (propertyMapping instanceof SimplePropertyMapping) {
+            value = propertyValueProvider.getSimpleValue((SimplePropertyMapping) propertyMapping, importConfiguration, rawValuesSource, entity);
+        } else if (propertyMapping instanceof CustomPropertyMapping) {
+            value = propertyValueProvider.getCustomValue((CustomPropertyMapping) propertyMapping, importConfiguration, rawValuesSource);
         }
         EntityValues.setValueEx(entity, propertyMapping.getEntityPropertyName(), value);
     }

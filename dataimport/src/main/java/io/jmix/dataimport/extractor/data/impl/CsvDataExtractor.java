@@ -23,13 +23,11 @@ import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
-@Component("datimp_CsvDataExtractor")
 public class CsvDataExtractor implements ImportedDataExtractor {
 
     @Override
