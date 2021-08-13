@@ -65,7 +65,7 @@ class DataImporterTest extends DataImportSpec {
                         .addSimplePropertyMapping('amount', 'orderAmount')
                         .lookupByAllSimpleProperties()
                         .build())
-                .addReferencePropertyMapping('product', 'name', 'productName', ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping('product', 'productName', 'name', ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .addSimplePropertyMapping("quantity", "quantity")
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)

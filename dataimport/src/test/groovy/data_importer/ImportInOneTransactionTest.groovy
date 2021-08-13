@@ -285,7 +285,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .lookupByAllSimpleProperties()
                         .build()
                 )
-                .addReferencePropertyMapping('product', 'name', 'productName', ReferenceImportPolicy.IGNORE_IF_MISSING)
+                .addReferencePropertyMapping('product', 'productName', 'name', ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .addSimplePropertyMapping("quantity", "quantity")
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
@@ -306,7 +306,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
         given:
         def importConfig = ImportConfiguration.builder(OrderLine, InputDataFormat.XML)
                 .addSimplePropertyMapping("quantity", "quantity")
-                .addReferencePropertyMapping("product", "name", "productName", ReferenceImportPolicy.FAIL_IF_MISSING)
+                .addReferencePropertyMapping("product", "productName", "name", ReferenceImportPolicy.FAIL_IF_MISSING)
                 .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('order', ReferenceImportPolicy.CREATE)
                         .addSimplePropertyMapping('date', 'orderDate')
                         .addSimplePropertyMapping('orderNumber', 'orderNumber')
