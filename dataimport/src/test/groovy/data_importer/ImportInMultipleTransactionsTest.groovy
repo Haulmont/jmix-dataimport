@@ -483,4 +483,32 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         checkOrder(secondOrder, '#0001', '12/12/2020 12:30', 100)
         checkCustomer(secondOrder.customer, 'John Dow', null, null)
     }
+
+    def 'test entity initializer'() {
+        given:
+        def importConfig = ImportConfiguration.builder(Customer, InputDataFormat.CSV)
+                .addSimplePropertyMapping("name", "Name")
+                .addSimplePropertyMapping("email", "Email")
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
+                .withEntityInitializer(entity -> {
+                    Customer customer = (Customer) entity
+                    customer.grade = CustomerGrade.BRONZE
+                })
+                .build()
+        InputStream csvContent = resources.getResourceAsStream("/test_support/input_data_files/csv/customers.csv")
+
+        when: 'data imported'
+        def importResult = dataImporter.importData(importConfig, csvContent)
+
+        then:
+        importResult.success
+        importResult.importedEntityIds.size() == 2
+        importResult.failedEntities.size() == 0
+
+        def customer1 = loadEntity(Customer, importResult.importedEntityIds[0], FetchPlan.LOCAL) as Customer
+        checkCustomer(customer1, 'John Smith', 'j.smith@mail.com', CustomerGrade.BRONZE)
+
+        def customer2 =  loadEntity(Customer, importResult.importedEntityIds[1], FetchPlan.LOCAL) as Customer
+        checkCustomer(customer2, 'Tom Smith', 't.smith@mail.com', CustomerGrade.BRONZE)
+    }
 }

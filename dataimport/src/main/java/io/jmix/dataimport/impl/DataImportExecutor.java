@@ -246,7 +246,6 @@ public class DataImportExecutor {
         return false;
     }
 
-
     protected boolean checkEntityDuplicate(EntityExtractionResult extractionResult) {
         if (CollectionUtils.isNotEmpty(importConfiguration.getUniqueEntityConfigurations())) {
             for (UniqueEntityConfiguration configuration : importConfiguration.getUniqueEntityConfigurations()) {
@@ -320,6 +319,12 @@ public class DataImportExecutor {
         return true;
     }
 
+    protected void applyEntityInitializer(List<Object> entitiesToImport) {
+        if (importConfiguration.getEntityInitializer() != null) {
+            entitiesToImport.forEach(entityToImport -> importConfiguration.getEntityInitializer().accept(entityToImport));
+        }
+    }
+
     protected void importEntity(EntityExtractionResult entityExtractionResult) {
         try {
             Collection<Object> importedEntities = importEntities(Collections.singletonList(entityExtractionResult.getEntity()));
@@ -345,6 +350,8 @@ public class DataImportExecutor {
     }
 
     protected List<Object> importEntities(List<Object> entitiesToImport) {
+        applyEntityInitializer(entitiesToImport);
+
         List<Object> resultList = new ArrayList<>();
         entitiesToImport.forEach(entityToImport -> {
             EntityImportPlan entityImportPlan = createEntityImportPlan(entityToImport);

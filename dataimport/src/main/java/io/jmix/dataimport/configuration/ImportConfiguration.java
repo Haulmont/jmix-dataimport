@@ -22,6 +22,7 @@ import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -35,9 +36,8 @@ import java.util.function.Predicate;
  *     <li>Import batch size: number of entities that will imported in one batch if {@link ImportTransactionStrategy#TRANSACTION_PER_BATCH} is used. By default, 100. </li>
  *     <li>Date format: date format used in the input data.</li>
  *     <li>Custom formats of boolean true and false values.</li>
- *     <li>Pre-import predicate: a predicate that is executed for each extracted entity before import. If the predicate returns false, the entity won't be imported.
- *         Also it is possible to make additional changes with a extracted entity in the predicate. In this case, the entity will be imported with applied changes.
- *     </li>
+ *     <li>Pre-import predicate: a predicate that is executed for each extracted entity before import. If the predicate returns false, the entity won't be imported.</li>
+ *     <li>Entity initializer: a consumer that is executed after pre-import check and allows to make additional changes with extracted entity before import.</li>
  *     <li>Input data charset: this parameter is required if CSV is input data format. Default value: UTF-8.</li>
  *     <li>Unique entity configurations: list of {@link UniqueEntityConfiguration}.</li>
  * </ol>
@@ -95,6 +95,7 @@ public class ImportConfiguration {
     protected List<UniqueEntityConfiguration> uniqueEntityConfigurations = new ArrayList<>();
 
     protected Predicate<EntityExtractionResult> preImportPredicate;
+    protected Consumer<Object> entityInitializer;
 
     public ImportConfiguration(Class entityClass, String inputDataFormat) {
         this.entityClass = entityClass;
@@ -320,6 +321,26 @@ public class ImportConfiguration {
      */
     public ImportConfiguration setPreImportPredicate(Predicate<EntityExtractionResult> preImportPredicate) {
         this.preImportPredicate = preImportPredicate;
+        return this;
+    }
+
+    /**
+     * Gets a consumer that makes additional changes with entity before import.
+     *
+     * @return consumer that makes additional changes with entity before import
+     */
+    public Consumer<Object> getEntityInitializer() {
+        return entityInitializer;
+    }
+
+    /**
+     * Sets a consumer that makes additional changes with entity before import.
+     *
+     * @param entityInitializer consumer that makes additional changes with entity before import
+     * @return current instance of import configuration
+     */
+    public ImportConfiguration setEntityInitializer(Consumer<Object> entityInitializer) {
+        this.entityInitializer = entityInitializer;
         return this;
     }
 
