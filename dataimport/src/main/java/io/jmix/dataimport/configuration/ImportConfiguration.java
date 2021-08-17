@@ -32,6 +32,7 @@ import java.util.function.Predicate;
  *     <li>Input data format (required): xlsx, csv, json or xml.</li>
  *     <li>Property mappings: list of {@link PropertyMapping}.</li>
  *     <li>Transaction strategy: {@link ImportTransactionStrategy}. By default, each entity is imported in the separate transaction.</li>
+ *     <li>Import batch size: number of entities that will imported in one batch if {@link ImportTransactionStrategy#TRANSACTION_PER_BATCH} is used. By default, 100. </li>
  *     <li>Date format: date format used in the input data.</li>
  *     <li>Custom formats of boolean true and false values.</li>
  *     <li>Pre-import predicate: a predicate that is executed for each extracted entity before import. If the predicate returns false, the entity won't be imported.
@@ -64,6 +65,13 @@ import java.util.function.Predicate;
  *                 .addReferencePropertyMapping("bonusCard", "bonusCardNumber", "cardNumber", ReferenceImportPolicy.IGNORE_IF_MISSING)
  *                 .addUniqueEntityConfiguration(DuplicateEntityPolicy.ABORT, "name", "email")
  *                 .build();
+ *
+ *  ImportConfiguration importConfiguration = ImportConfiguration.builder(Customer.class, InputDataFormat.XML)
+ *                 .addSimplePropertyMapping("name", "name")
+ *                 .addSimplePropertyMapping("email", "email")
+ *                 .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+ *                 .withImportBatchSize(50)
+ *                 .build();
  * </pre>
  *
  * @see ImportConfigurationBuilder
@@ -74,6 +82,7 @@ public class ImportConfiguration {
     protected List<PropertyMapping> propertyMappings = new ArrayList<>();
 
     protected ImportTransactionStrategy transactionStrategy;
+    protected int importBatchSize = 100;
 
     protected String inputDataFormat;
 
@@ -140,6 +149,28 @@ public class ImportConfiguration {
      */
     public ImportConfiguration setTransactionStrategy(ImportTransactionStrategy transactionStrategy) {
         this.transactionStrategy = transactionStrategy;
+        return this;
+    }
+
+    /**
+     * Gets a number of entities that will be imported in one batch.
+     *
+     * @return number of entities that will be imported in one batch
+     */
+    public int getImportBatchSize() {
+        return importBatchSize;
+    }
+
+    /**
+     * Sets a number of entities that will be imported in one batch.
+     * <br/>
+     * Note: it is actual if {@link ImportTransactionStrategy#TRANSACTION_PER_BATCH} is used.
+     *
+     * @param importBatchSize number of entities that will be imported in one batch.
+     * @return current instance of import configuration
+     */
+    public ImportConfiguration setImportBatchSize(int importBatchSize) {
+        this.importBatchSize = importBatchSize;
         return this;
     }
 

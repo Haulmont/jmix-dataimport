@@ -31,7 +31,7 @@ import test_support.entity.Product
 class EntityExtractorTest extends DataImportSpec {
 
     @Autowired
-    protected EntityExtractor entityExtractor;
+    protected EntityExtractor entityExtractor
 
     def 'test entity extraction'() {
         given:
@@ -83,6 +83,53 @@ class EntityExtractorTest extends DataImportSpec {
 
         when: 'entities extracted'
         def entityExtractionResults = entityExtractor.extractEntities(configuration, importedData)
+
+        then:
+        entityExtractionResults.size() == 2
+        def entityExtractionResult1 = entityExtractionResults[0]
+        entityExtractionResult1.importedDataItem == importedDataItem1
+
+        def entityExtractionResult2 = entityExtractionResults[1]
+        entityExtractionResult2.importedDataItem == importedDataItem2
+
+        def customer1 = entityExtractionResult1.entity as Customer
+        checkCustomer(customer1, 'John Dow', null, null)
+        customer1.orders.size() == 1
+        checkOrder(customer1.orders[0], '#001', '12/06/2021 12:00', 20)
+
+        def customer2 = entityExtractionResult2.entity as Customer
+        checkCustomer(customer2, 'Tom Smith', null, null)
+        customer2.orders.size() == 1
+        checkOrder(customer2.orders[0], '#002', '25/06/2021 12:00', 50)
+    }
+
+    def 'test entities extraction from list'() {
+        given:
+        def configuration = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
+                .addSimplePropertyMapping("name", "name")
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
+                        .addSimplePropertyMapping("orderNumber", "orderNum")
+                        .addSimplePropertyMapping("amount", "orderAmount")
+                        .addSimplePropertyMapping("date", "orderDate")
+                        .lookupByAllSimpleProperties()
+                        .build())
+                .withDateFormat("dd/MM/yyyy hh:mm")
+                .build()
+
+        def importedDataItem1 = new ImportedDataItem()
+        importedDataItem1.addRawValue("name", "John Dow")
+        importedDataItem1.addRawValue("orderNum", "#001")
+        importedDataItem1.addRawValue("orderDate", "12/06/2021 12:00")
+        importedDataItem1.addRawValue("orderAmount", "20")
+
+        def importedDataItem2 = new ImportedDataItem()
+        importedDataItem2.addRawValue("name", "Tom Smith")
+        importedDataItem2.addRawValue("orderNum", "#002")
+        importedDataItem2.addRawValue("orderDate", "25/06/2021 12:00")
+        importedDataItem2.addRawValue("orderAmount", "50")
+
+        when: 'entities extracted'
+        def entityExtractionResults = entityExtractor.extractEntities(configuration, Arrays.asList(importedDataItem1, importedDataItem2))
 
         then:
         entityExtractionResults.size() == 2

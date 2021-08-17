@@ -34,6 +34,7 @@ import java.util.function.Predicate;
  *     <li>Input data format (required): xlsx, csv, json or xml.</li>
  *     <li>Property mappings: list of {@link PropertyMapping}</li>
  *     <li>Transaction strategy: {@link ImportTransactionStrategy}. By default, each entity is imported in the separate transaction.</li>
+ *     <li>Import batch size: number of entities that will imported in one batch if {@link ImportTransactionStrategy#TRANSACTION_PER_BATCH} is used. By default, 100. </li>
  *     <li>Date format</li>
  *     <li>Custom formats of boolean true and false values</li>
  *     <li>Pre-import predicate: a predicate that is executed for each extracted entity before import. If the predicate returns false, the entity won't be imported.
@@ -48,6 +49,7 @@ public class ImportConfigurationBuilder {
     private List<PropertyMapping> propertyMappings = new ArrayList<>();
 
     private ImportTransactionStrategy transactionStrategy;
+    private int importBatchSize = 100;
 
     private String inputDataFormat;
 
@@ -138,6 +140,20 @@ public class ImportConfigurationBuilder {
     }
 
     /**
+     * Sets a number of entities that will be imported in one batch.
+     * <br/>
+     * Note: it is actual if {@link ImportTransactionStrategy#TRANSACTION_PER_BATCH} is used.
+     *
+     * @param importBatchSize number of entities that will be imported in one batch
+     * @return current instance of builder
+     */
+
+    public ImportConfigurationBuilder withImportBatchSize(int importBatchSize) {
+        this.importBatchSize = importBatchSize;
+        return this;
+    }
+
+    /**
      * Creates and adds a property mapping for the reference property mapped by one data field.
      *
      * @param entityPropertyName reference property name
@@ -220,6 +236,7 @@ public class ImportConfigurationBuilder {
                 .setBooleanTrueValue(booleanTrueValue)
                 .setBooleanFalseValue(booleanFalseValue)
                 .setTransactionStrategy(this.transactionStrategy)
+                .setImportBatchSize(importBatchSize)
                 .setPropertyMappings(propertyMappings)
                 .setInputDataCharset(this.inputDataCharset)
                 .setPreImportPredicate(this.preImportPredicate)

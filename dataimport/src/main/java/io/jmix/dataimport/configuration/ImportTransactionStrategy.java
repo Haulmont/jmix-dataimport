@@ -21,9 +21,11 @@ package io.jmix.dataimport.configuration;
  * <ul>
  *     <li>Single transaction: if any entity import fails, the import process fails</li>
  *     <li>Transaction per entity: if any entity import fails, the import process continues</li>
+ *     <li>Transaction per batch: the entities are imported by batches. If any entity import in batch fails, the import process continues. All entities in the not imported batch are marked as failed.</li>
  * </ul>
  */
 public enum ImportTransactionStrategy {
     SINGLE_TRANSACTION,
-    TRANSACTION_PER_ENTITY
+    TRANSACTION_PER_ENTITY,
+    TRANSACTION_PER_BATCH
 }

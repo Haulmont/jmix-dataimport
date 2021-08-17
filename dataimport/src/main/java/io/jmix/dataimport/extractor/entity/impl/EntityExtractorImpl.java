@@ -48,17 +48,19 @@ public class EntityExtractorImpl implements EntityExtractor {
 
     @Override
     public List<EntityExtractionResult> extractEntities(ImportConfiguration importConfiguration, ImportedData importedData) {
+        return extractEntities(importConfiguration, importedData.getItems());
+    }
+
+    @Override
+    public List<EntityExtractionResult> extractEntities(ImportConfiguration importConfiguration, List<ImportedDataItem> importedDataItems) {
         List<EntityExtractionResult> entityExtractionResults = new ArrayList<>();
         Map<PropertyMapping, List<Object>> createdReferences = new HashMap<>();
-
-        importedData.getItems().forEach(importedDataItem -> {
+        importedDataItems.forEach(importedDataItem -> {
             Object entityToPopulate = metadata.create(importConfiguration.getEntityClass());
             EntityInfo entityInfo = entityPropertiesPopulator.populateProperties(entityToPopulate, importConfiguration, importedDataItem, createdReferences);
             entityExtractionResults.add(new EntityExtractionResult(entityInfo.getEntity(), importedDataItem));
             fillCreatedReferences(entityInfo, createdReferences);
         });
-
-
         return entityExtractionResults;
     }
 

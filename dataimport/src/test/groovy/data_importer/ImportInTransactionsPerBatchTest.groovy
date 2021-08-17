@@ -30,9 +30,15 @@ import io.jmix.dataimport.configuration.mapping.SimplePropertyMapping
 import io.jmix.dataimport.result.EntityImportErrorType
 import org.springframework.beans.factory.annotation.Autowired
 import test_support.DataImportSpec
-import test_support.entity.*
+import test_support.entity.BonusCard
+import test_support.entity.Customer
+import test_support.entity.Order
+import test_support.entity.OrderLine
+import test_support.entity.PaymentType
+import test_support.entity.Product
 
-class ImportInOneTransactionTest extends DataImportSpec {
+class ImportInTransactionsPerBatchTest extends DataImportSpec {
+
     @Autowired
     protected DataImporter dataImporter
     @Autowired
@@ -45,7 +51,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                 .addSimplePropertyMapping("price", "price")
                 .addSimplePropertyMapping("special", "special")
                 .withBooleanFormats("Yes", "No")
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
                 .build()
 
         def xmlContent = resources.getResourceAsStream("/test_support/input_data_files/xml/one_product.xml")
@@ -76,7 +82,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .addSimplePropertyMapping("balance", "balance")
                         .lookupByAllSimpleProperties()
                         .build())
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(1)
                 .build()
 
         def jsonContent = resources.getResourceAsStream("/test_support/input_data_files/json/customers_and_bonus_cards.json")
@@ -114,7 +121,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .lookupByAllSimpleProperties()
                         .build())
                 .withDateFormat('dd/MM/yyyy HH:mm')
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(2)
                 .build()
 
         def csvContent = resources.getResourceAsStream("/test_support/input_data_files/csv/orders.csv")
@@ -154,7 +162,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .addSimplePropertyMapping("amount", "Order Amount")
                         .build())
                 .withDateFormat('dd/MM/yyyy HH:mm')
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(2)
                 .build()
 
         def csvContent = resources.getResourceAsStream("/test_support/input_data_files/csv/orders.csv")
@@ -193,7 +202,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .addSimplePropertyMapping('email', 'Customer Email')
                         .lookupByAllSimpleProperties()
                         .build())
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(2)
                 .withDateFormat("dd/MM/yyyy HH:mm")
                 .withPreImportPredicate(entityExtractionResult -> {
                     def order = entityExtractionResult.getEntity() as Order
@@ -242,7 +252,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .addSimplePropertyMapping("quantity", "Quantity")
                         .lookupByAllSimpleProperties()
                         .build())
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(2)
                 .withDateFormat("dd/MM/yyyy HH:mm")
                 .build()
 
@@ -288,7 +299,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
                 .addReferencePropertyMapping('product', 'productName', 'name', ReferenceImportPolicy.IGNORE_IF_MISSING)
                 .addSimplePropertyMapping("quantity", "quantity")
                 .withDateFormat('dd/MM/yyyy HH:mm')
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(1)
                 .build()
         InputStream xmlContent = resources.getResourceAsStream("/test_support/input_data_files/xml/order_lines.xml")
 
@@ -297,9 +309,18 @@ class ImportInOneTransactionTest extends DataImportSpec {
 
         then:
         !importResult.success
-        importResult.importedEntityIds.size() == 0
-        importResult.failedEntities.size() == 0
-        importResult.errorMessage != null
+        importResult.importedEntityIds.size() == 1
+        importResult.failedEntities.size() == 1
+
+        def orderLine = loadEntity(OrderLine, importResult.importedEntityIds[0], 'orderLine-full') as OrderLine
+        checkOrderLine(orderLine, 'Outback Power Nano-Carbon Battery 12V', 4)
+        checkOrder(orderLine.order, '#002', '28/06/2021 12:00', 25)
+
+        def entityImportError = importResult.failedEntities[0]
+        entityImportError.errorType == EntityImportErrorType.NOT_IMPORTED_BATCH
+        def failedOrderLine = entityImportError.entity as OrderLine
+        checkOrderLine(failedOrderLine, null, 1)
+        checkOrder(failedOrderLine.order, '#001', '24/06/2021 10:00', 210.55)
     }
 
     def 'test failed pre-import predicate'() {
@@ -307,7 +328,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
         def importConfig = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
                 .addSimplePropertyMapping("name", "Name")
                 .addSimplePropertyMapping("email", "Email")
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(1)
                 .withPreImportPredicate(entityExtractionResult -> {
                     Customer customer = entityExtractionResult.entity as Customer
                     if (!customer.email.contains('@mail.com')) {
@@ -323,9 +345,16 @@ class ImportInOneTransactionTest extends DataImportSpec {
 
         then:
         !importResult.success
-        importResult.importedEntityIds.size() == 0
-        importResult.failedEntities.size() == 0
-        importResult.errorMessage == 'Error while importing the data: Incorrect email. \nTransaction abort - no entity is stored in the database.'
+        importResult.importedEntityIds.size() == 1
+        importResult.failedEntities.size() == 1
+
+        def customer = loadEntity(Customer, importResult.importedEntityIds[0], FetchPlan.LOCAL) as Customer
+        checkCustomer(customer, 'John Smith', 'j.smith@mail.com', null)
+
+        def entityImportError = importResult.failedEntities[0]
+        entityImportError.errorType == EntityImportErrorType.NOT_IMPORTED_BATCH
+        def failedCustomer = entityImportError.entity as Customer
+        checkCustomer(failedCustomer, 'Tom Smith', 't.smith.mail.com', null)
     }
 
     def 'test failed import with FAIL_IF_MISSING import policy'() {
@@ -339,7 +368,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .addSimplePropertyMapping('amount', 'orderAmount')
                         .build())
                 .withDateFormat('dd/MM/yyyy HH:mm')
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(1)
                 .build()
 
         def xmlContent = resources.getResourceAsStream("/test_support/input_data_files/xml/order_lines.xml")
@@ -349,9 +379,18 @@ class ImportInOneTransactionTest extends DataImportSpec {
 
         then:
         !result.success
-        result.failedEntities.size() == 0
-        result.importedEntityIds.size() == 0
-        result.errorMessage != null
+        result.failedEntities.size() == 1
+        result.importedEntityIds.size() == 1
+
+        def importedOrderLine = dataManager.load(OrderLine)
+                .id(result.importedEntityIds[0])
+                .fetchPlan(FetchPlan.LOCAL)
+                .one() as OrderLine
+        checkOrderLine(importedOrderLine, 'Outback Power Nano-Carbon Battery 12V', 4)
+
+        def failedOrderLineResult = result.failedEntities[0]
+        failedOrderLineResult.errorMessage == 'Existing value not found for property [product] in entity [sales_OrderLine]'
+        failedOrderLineResult.errorType == EntityImportErrorType.DATA_BINDING
     }
 
     def 'test unique entity configuration with UPDATE policy if duplicate exists in the input data'() {
@@ -366,7 +405,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                 .addSimplePropertyMapping("amount", "Order Amount")
                 .addSimplePropertyMapping("date", "Order Date")
                 .withDateFormat("dd/MM/yyyy hh:mm")
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
                 .addUniqueEntityConfiguration(DuplicateEntityPolicy.UPDATE, 'orderNumber', 'customer.name')
                 .build()
 
@@ -399,7 +438,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                 .addSimplePropertyMapping("amount", "Order Amount")
                 .addSimplePropertyMapping("date", "Order Date")
                 .withDateFormat("dd/MM/yyyy hh:mm")
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
                 .addUniqueEntityConfiguration(DuplicateEntityPolicy.SKIP, 'orderNumber', 'customer.name')
                 .build()
 
@@ -439,7 +478,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                 .addSimplePropertyMapping("amount", "Order Amount")
                 .addSimplePropertyMapping("date", "Order Date")
                 .withDateFormat("dd/MM/yyyy hh:mm")
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
                 .addUniqueEntityConfiguration(DuplicateEntityPolicy.ABORT, 'orderNumber', 'customer.name')
                 .build()
 
@@ -451,7 +490,9 @@ class ImportInOneTransactionTest extends DataImportSpec {
         then:
         !importResult.success
         importResult.importedEntityIds.size() == 0
+        importResult.failedEntities.size() == 0
         importResult.errorMessage != null
+        importResult.errorMessage.startsWith('Unique violation occurred with Unique Policy ABORT for entity:')
     }
 
     def 'test unique entity configuration with UPDATE policy if duplicate exists in db'() {
@@ -459,7 +500,8 @@ class ImportInOneTransactionTest extends DataImportSpec {
         def importConfig = new ImportConfiguration(Customer, InputDataFormat.XML)
                 .addPropertyMapping(new SimplePropertyMapping("name", "name"))
                 .addPropertyMapping(new SimplePropertyMapping("email", "email"))
-                .setTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .setTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .setImportBatchSize(1)
                 .addUniqueEntityConfiguration(new UniqueEntityConfiguration(Arrays.asList("name"), DuplicateEntityPolicy.UPDATE))
                 .setDateFormat('dd/MM/yyyy HH:mm')
 
@@ -481,29 +523,39 @@ class ImportInOneTransactionTest extends DataImportSpec {
 
     def 'test unique entity configuration with ABORT policy if duplicate exists in db'() {
         given:
-        def importConfig = ImportConfiguration.builder(Customer, InputDataFormat.XML)
-                .addSimplePropertyMapping("name", "name")
-                .addSimplePropertyMapping("email", "email")
-                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder("orders", ReferenceImportPolicy.CREATE)
-                        .withDataFieldName("order")
-                        .addSimplePropertyMapping("orderNumber", "number")
-                        .addSimplePropertyMapping("date", "date")
-                        .addSimplePropertyMapping("amount", "amount")
+        def configuration = ImportConfiguration.builder(Order, InputDataFormat.XLSX)
+                .addPropertyMapping(ReferenceMultiFieldPropertyMapping.builder('customer', ReferenceImportPolicy.CREATE_IF_MISSING)
+                        .addSimplePropertyMapping('name', 'Customer Name')
+                        .addSimplePropertyMapping('email', 'Customer Email')
+                        .lookupByAllSimpleProperties()
                         .build())
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
-                .addUniqueEntityConfiguration(DuplicateEntityPolicy.ABORT, "name")
-                .withDateFormat('dd/MM/yyyy HH:mm')
+                .addSimplePropertyMapping("orderNumber", "Order Num")
+                .addSimplePropertyMapping("amount", "Order Amount")
+                .addSimplePropertyMapping("date", "Order Date")
+                .withDateFormat("dd/MM/yyyy hh:mm")
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
+                .withImportBatchSize(2)
+                .addUniqueEntityConfiguration(DuplicateEntityPolicy.ABORT, 'orderNumber', 'customer.name')
                 .build()
 
-        def xmlContent = resources.getResourceAsStream("/test_support/input_data_files/xml/customer_with_orders.xml")
+        def xlsxContent = resources.getResourceAsStream("/test_support/input_data_files/xlsx/duplicate_orders.xlsx")
 
         when: 'data imported'
-        def result = dataImporter.importData(importConfig, xmlContent)
+        def importResult = dataImporter.importData(configuration, xlsxContent)
 
         then:
-        !result.success
-        result.importedEntityIds.size() == 0
-        result.errorMessage != null
+        !importResult.success
+        importResult.importedEntityIds.size() == 2
+        importResult.errorMessage != null
+        importResult.errorMessage.startsWith('Unique violation occurred with Unique Policy ABORT for entity:')
+
+        def firstOrder = loadEntity(Order, importResult.importedEntityIds[0], FetchPlan.BASE) as Order
+        checkOrder(firstOrder, '#0001', '12/12/2020 12:30', 100)
+        checkCustomer(firstOrder.customer, 'Tom Smith', null, null)
+
+        def secondOrder = loadEntity(Order, importResult.importedEntityIds[1], FetchPlan.BASE) as Order
+        checkOrder(secondOrder, '#0001', '12/12/2020 12:30', 100)
+        checkCustomer(secondOrder.customer, 'John Dow', null, null)
     }
 
     def 'test unique entity configuration with SKIP policy if duplicate exists in db'() {
@@ -517,7 +569,7 @@ class ImportInOneTransactionTest extends DataImportSpec {
                         .addSimplePropertyMapping("date", "date")
                         .addSimplePropertyMapping("amount", "amount")
                         .build())
-                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_BATCH)
                 .addUniqueEntityConfiguration(DuplicateEntityPolicy.SKIP, Arrays.asList("name"))
                 .withDateFormat('dd/MM/yyyy HH:mm')
                 .build()

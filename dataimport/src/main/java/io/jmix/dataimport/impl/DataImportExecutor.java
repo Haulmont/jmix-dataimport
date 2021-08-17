@@ -33,6 +33,7 @@ import io.jmix.dataimport.configuration.mapping.ReferencePropertyMapping;
 import io.jmix.dataimport.configuration.mapping.SimplePropertyMapping;
 import io.jmix.dataimport.exception.ImportUniqueAbortException;
 import io.jmix.dataimport.extractor.data.ImportedData;
+import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import io.jmix.dataimport.extractor.entity.EntityExtractionResult;
 import io.jmix.dataimport.extractor.entity.EntityExtractor;
 import io.jmix.dataimport.property.populator.EntityInfo;
@@ -100,6 +101,8 @@ public class DataImportExecutor {
 
         if (importConfiguration.getTransactionStrategy() == ImportTransactionStrategy.SINGLE_TRANSACTION) {
             importInOneTransaction();
+        } else if (importConfiguration.getTransactionStrategy() == ImportTransactionStrategy.TRANSACTION_PER_BATCH) {
+            importByBatches();
         } else {
             importInMultipleTransactions();
         }
@@ -107,7 +110,7 @@ public class DataImportExecutor {
         return importResult;
     }
 
-    public void importInOneTransaction() {
+    protected void importInOneTransaction() {
         try {
             List<EntityExtractionResult> extractionResults = null;
             try {
@@ -117,25 +120,78 @@ public class DataImportExecutor {
             }
 
             if (extractionResults != null) {
-                List<EntityExtractionResult> processedResults = new ArrayList<>(); //to search duplicates
-                List<Object> entitiesToImport = extractionResults.stream()
-                        .filter(extractionResult -> checkEntityDuplicate(extractionResult, processedResults))
-                        .filter(this::checkPreImportPredicate)
-                        .map(EntityExtractionResult::getEntity)
-                        .distinct()
-                        .collect(Collectors.toList());
-                importEntities(entitiesToImport);
+                List<Object> entitiesToImport = checkExtractionResults(extractionResults);
+                List<Object> importedEntities = importEntities(entitiesToImport);
+                importResult.setImportedEntityIds(importedEntities);
             }
         } catch (ImportUniqueAbortException e) {
             createErrorResult(e, String.format("Unique violation occurred with Unique Policy ABORT for entity: '%s' with data item: '%s'. Found entity: '%s'",
                     e.getCreatedEntity(), e.getImportedDataItem(),
                     e.getExistingEntity()));
         } catch (Exception e) {
-            createErrorResult(e, String.format("Error while importing the data: %s", e.getMessage()));
+            createErrorResult(e, String.format("Error while importing the data: %s. \nTransaction abort - no entity is stored in the database.", e.getMessage()));
         }
     }
 
-    public void importInMultipleTransactions() {
+    protected void importByBatches() {
+        int offset = 0;
+        int batchSize = importConfiguration.getImportBatchSize();
+        List<ImportedDataItem> allItems = importedData.getItems();
+        while (true) {
+            int end = offset + batchSize;
+            List<ImportedDataItem> importedDataItemsBatch = allItems.subList(offset, Math.min(end, allItems.size()));
+            try {
+                processBatch(importedDataItemsBatch);
+            } catch (ImportUniqueAbortException e) {
+                createErrorResult(e, String.format("Unique violation occurred with Unique Policy ABORT for entity: '%s' with data item: '%s'. Found entity: '%s'",
+                        e.getCreatedEntity(), e.getImportedDataItem(),
+                        e.getExistingEntity()));
+                break;
+            }
+            if (end >= allItems.size()) {
+                break;
+            } else {
+                offset += batchSize;
+            }
+        }
+    }
+
+    protected void processBatch(List<ImportedDataItem> importedDataItemsBatch) {
+        List<EntityExtractionResult> extractionResults = null;
+        try {
+            try {
+                extractionResults = entityExtractor.extractEntities(importConfiguration, importedDataItemsBatch);
+            } catch (Exception e) {
+                importResult.setSuccess(false);
+                importedDataItemsBatch.forEach(dataItem -> importResult.addFailedEntity(new EntityImportError()
+                        .setImportedDataItem(dataItem)
+                        .setErrorType(EntityImportErrorType.DATA_BINDING)
+                        .setErrorMessage(e.getMessage())));
+            }
+
+            if (extractionResults != null) {
+                List<Object> entitiesToImport = checkExtractionResults(extractionResults);
+                Collection<Object> importedEntities = importEntities(entitiesToImport);
+                importedEntities.stream()
+                        .filter(importedEntityId -> !importResult.getImportedEntityIds().contains(importedEntityId))
+                        .forEach(importedEntityId -> importResult.addImportedEntityId(importedEntityId));
+            }
+        } catch (ImportUniqueAbortException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error while importing entities batch: ", e);
+            importResult.setSuccess(false);
+            if (extractionResults != null) {
+                extractionResults.forEach(extractionResult -> importResult.addFailedEntity(new EntityImportError(extractionResult.getEntity())
+                        .setImportedDataItem(extractionResult.getImportedDataItem())
+                        .setErrorType(EntityImportErrorType.NOT_IMPORTED_BATCH)
+                        .setErrorMessage(e.getMessage())));
+            }
+
+        }
+    }
+
+    protected void importInMultipleTransactions() {
         try {
             importResult.setSuccess(true);
             importedData.getItems().forEach(dataItem -> {
@@ -163,6 +219,16 @@ public class DataImportExecutor {
                     e.getExistingEntity());
             createErrorResult(e, errorMessage);
         }
+    }
+
+    protected List<Object> checkExtractionResults(List<EntityExtractionResult> extractionResults) {
+        List<EntityExtractionResult> processedResults = new ArrayList<>(); //to search duplicates
+        return extractionResults.stream()
+                .filter(extractionResult -> checkEntityDuplicate(extractionResult, processedResults))
+                .filter(this::checkPreImportPredicate)
+                .map(EntityExtractionResult::getEntity)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     protected boolean checkExtractedEntity(EntityExtractionResult entityExtractionResult) {
@@ -254,21 +320,10 @@ public class DataImportExecutor {
         return true;
     }
 
-    protected void importEntities(List<Object> entitiesToImport) {
-        try {
-            Collection<Object> importedEntities = tryToImportEntities(entitiesToImport);
-            importResult.setImportedEntityIds(importedEntities.stream().map(EntityValues::getId).collect(Collectors.toList()));
-        } catch (EntityValidationException e) {
-            createErrorResult(e, e.getMessage() + "\nTransaction abort - no entity is stored in the database.");
-        } catch (PersistenceException e) {
-            createErrorResult(e, "Error while executing import: " + e.getMessage() + "\nTransaction abort - no entity is stored in the database.");
-        }
-    }
-
     protected void importEntity(EntityExtractionResult entityExtractionResult) {
         try {
-            Collection<Object> importedEntities = tryToImportEntities(Collections.singletonList(entityExtractionResult.getEntity()));
-            Object importedEntityId = EntityValues.getId(importedEntities.iterator().next());
+            Collection<Object> importedEntities = importEntities(Collections.singletonList(entityExtractionResult.getEntity()));
+            Object importedEntityId = importedEntities.iterator().next();
             if (!importResult.getImportedEntityIds().contains(importedEntityId)) {
                 importResult.addImportedEntityId(importedEntityId);
             }
@@ -289,7 +344,7 @@ public class DataImportExecutor {
         }
     }
 
-    protected Collection<Object> tryToImportEntities(List<Object> entitiesToImport) {
+    protected List<Object> importEntities(List<Object> entitiesToImport) {
         List<Object> resultList = new ArrayList<>();
         entitiesToImport.forEach(entityToImport -> {
             EntityImportPlan entityImportPlan = createEntityImportPlan(entityToImport);
@@ -299,7 +354,9 @@ public class DataImportExecutor {
                     .collect(Collectors.toList());
             resultList.add(filteredImportedEntities.iterator().next());
         });
-        return resultList;
+        return resultList.stream()
+                .map(EntityValues::getId)
+                .collect(Collectors.toList());
     }
 
     protected EntityImportError createEntityImportErrorResult(EntityExtractionResult result, String errorMessage, EntityImportErrorType entityImportErrorType) {

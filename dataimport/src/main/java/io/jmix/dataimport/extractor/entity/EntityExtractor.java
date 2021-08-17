@@ -41,7 +41,16 @@ public interface EntityExtractor {
      *
      * @param importConfiguration import configuration
      * @param importedData        imported data
-     * @return extraction results for each unique extracted entity
+     * @return extraction results for each extracted entity
      */
     List<EntityExtractionResult> extractEntities(ImportConfiguration importConfiguration, ImportedData importedData);
+
+    /**
+     * Creates an entity for each {@link ImportedDataItem} from the specified list.
+     *
+     * @param importConfiguration import configuration
+     * @param importedDataItems   imported data items
+     * @return extraction results for each extracted entity
+     */
+    List<EntityExtractionResult> extractEntities(ImportConfiguration importConfiguration, List<ImportedDataItem> importedDataItems);
 }
