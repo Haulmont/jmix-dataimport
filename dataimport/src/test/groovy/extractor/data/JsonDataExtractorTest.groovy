@@ -31,7 +31,8 @@ import test_support.entity.Product
 
 class JsonDataExtractorTest extends DataImportSpec {
 
-    protected JsonDataExtractor jsonDataExtractor = new JsonDataExtractor();
+    @Autowired
+    protected JsonDataExtractor jsonDataExtractor
 
     @Autowired
     protected Resources resources;

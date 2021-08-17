@@ -19,9 +19,11 @@ package io.jmix.dataimport.extractor.data.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jmix.dataimport.InputDataFormat;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.exception.ImportException;
 import io.jmix.dataimport.extractor.data.*;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+@Component("datimp_JsonDataExtractor")
 public class JsonDataExtractor implements ImportedDataExtractor {
 
     @Override
@@ -56,6 +59,11 @@ public class JsonDataExtractor implements ImportedDataExtractor {
         } catch (IOException e) {
             throw new ImportException(e, "I/O error: " + e.getMessage());
         }
+    }
+
+    @Override
+    public String getSupportedDataFormat() {
+        return InputDataFormat.JSON;
     }
 
     protected ImportedData getImportedData(JsonNode rootNode) {

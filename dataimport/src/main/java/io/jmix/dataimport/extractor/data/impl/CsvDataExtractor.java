@@ -17,17 +17,20 @@
 package io.jmix.dataimport.extractor.data.impl;
 
 import com.opencsv.CSVReader;
+import io.jmix.dataimport.InputDataFormat;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.exception.ImportException;
 import io.jmix.dataimport.extractor.data.ImportedData;
 import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
+@Component("datimp_CsvDataExtractor")
 public class CsvDataExtractor implements ImportedDataExtractor {
 
     @Override
@@ -50,6 +53,11 @@ public class CsvDataExtractor implements ImportedDataExtractor {
             throw new ImportException(e, "Unable to read lines from CSV: " + e.getMessage());
         }
         return getImportedData(csvReader);
+    }
+
+    @Override
+    public String getSupportedDataFormat() {
+        return InputDataFormat.CSV;
     }
 
     protected ImportedData getImportedData(CSVReader csvReader) {

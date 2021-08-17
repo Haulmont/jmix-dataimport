@@ -168,7 +168,14 @@ public class DataImportExecutor {
     protected boolean checkExtractedEntity(EntityExtractionResult entityExtractionResult) {
         boolean needToImport = checkEntityDuplicate(entityExtractionResult);
         if (needToImport) {
-            return checkPreImportPredicate(entityExtractionResult);
+            try {
+                needToImport = checkPreImportPredicate(entityExtractionResult);
+            } catch (Exception e) {
+                log.error("Pre-import predicate execution failed with: ", e);
+                importResult.addFailedEntity(createEntityImportErrorResult(entityExtractionResult, String.format("Pre-import predicate execution failed with: %s", e.getMessage()), EntityImportErrorType.PRE_IMPORT_PREDICATE));
+                return false;
+            }
+            return needToImport;
         }
         return false;
     }
@@ -236,23 +243,13 @@ public class DataImportExecutor {
     }
 
     protected boolean checkPreImportPredicate(EntityExtractionResult entityExtractionResult) {
-        boolean needToImport = executePreImportPredicateIfNecessary(entityExtractionResult);
-        if (!needToImport) {
-            importResult.addFailedEntity(createEntityImportErrorResult(entityExtractionResult,
-                    "Entity not imported due to pre-commit predicate", EntityImportErrorType.VALIDATION));
-        }
-        return needToImport;
-    }
-
-    protected boolean executePreImportPredicateIfNecessary(EntityExtractionResult result) {
         if (importConfiguration.getPreImportPredicate() != null) {
-            try {
-                return importConfiguration.getPreImportPredicate().test(result);
-            } catch (Exception e) {
-                log.error("Pre-import predicate execution failed with: ", e);
-                importResult.addFailedEntity(createEntityImportErrorResult(result, String.format("Pre-import predicate execution failed with: %s", e.getMessage()), EntityImportErrorType.PRE_IMPORT_PREDICATE));
-                return false;
+            boolean needToImport = importConfiguration.getPreImportPredicate().test(entityExtractionResult);
+            if (!needToImport) {
+                importResult.addFailedEntity(createEntityImportErrorResult(entityExtractionResult,
+                        "Entity not imported due to pre-commit predicate", EntityImportErrorType.VALIDATION));
             }
+            return needToImport;
         }
         return true;
     }

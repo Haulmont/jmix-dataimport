@@ -16,6 +16,7 @@
 
 package io.jmix.dataimport.extractor.data.impl;
 
+import io.jmix.dataimport.InputDataFormat;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.exception.ImportException;
 import io.jmix.dataimport.extractor.data.ImportedData;
@@ -23,6 +24,7 @@ import io.jmix.dataimport.extractor.data.ImportedDataExtractor;
 import io.jmix.dataimport.extractor.data.ImportedDataItem;
 import org.apache.poi.hssf.usermodel.HSSFWorkbookFactory;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,6 +32,7 @@ import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 
+@Component("datimp_ExcelDataExtractor")
 public class ExcelDataExtractor implements ImportedDataExtractor {
 
     @Override
@@ -52,6 +55,11 @@ public class ExcelDataExtractor implements ImportedDataExtractor {
             throw new ImportException(e, "I/O error occurs during Excel data reading:" + e.getMessage());
         }
         return getImportedData(workbook);
+    }
+
+    @Override
+    public String getSupportedDataFormat() {
+        return InputDataFormat.XLSX;
     }
 
     protected ImportedData getImportedData(Workbook workbook) {

@@ -308,6 +308,39 @@ class ImportInMultipleTransactionsTest extends DataImportSpec {
         checkOrder(failedOrderLine.order, '#001', '24/06/2021 10:00', 210.55)
     }
 
+    def 'test failed pre-import predicate'() {
+        given:
+        def importConfig = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
+                .addSimplePropertyMapping("name", "Name")
+                .addSimplePropertyMapping("email", "Email")
+                .withTransactionStrategy(ImportTransactionStrategy.TRANSACTION_PER_ENTITY)
+                .withPreImportPredicate(entityExtractionResult -> {
+                    Customer customer = entityExtractionResult.entity as Customer
+                    if (!customer.email.contains('@mail.com')) {
+                        throw new IllegalArgumentException("Incorrect email");
+                    }
+                    return true
+                })
+                .build()
+        InputStream xlsxContent = resources.getResourceAsStream("/test_support/input_data_files/xlsx/customers.xlsx")
+
+        when: 'data imported'
+        def importResult = dataImporter.importData(importConfig, xlsxContent)
+
+        then:
+        importResult.success
+        importResult.importedEntityIds.size() == 1
+        importResult.failedEntities.size() == 1
+
+        def customer = loadEntity(Customer, importResult.importedEntityIds[0], FetchPlan.LOCAL) as Customer
+        checkCustomer(customer, 'John Smith', 'j.smith@mail.com', null)
+
+        def entityImportError = importResult.failedEntities[0]
+        entityImportError.errorType == EntityImportErrorType.PRE_IMPORT_PREDICATE
+        def failedCustomer = entityImportError.entity as Customer
+        checkCustomer(failedCustomer, 'Tom Smith', 't.smith.mail.com', null)
+    }
+
     def 'test failed import with FAIL_IF_MISSING import policy'() {
         given:
         def importConfig = ImportConfiguration.builder(OrderLine, InputDataFormat.XML)

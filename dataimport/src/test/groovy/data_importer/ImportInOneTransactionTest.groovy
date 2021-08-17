@@ -302,6 +302,32 @@ class ImportInOneTransactionTest extends DataImportSpec {
         importResult.errorMessage != null
     }
 
+    def 'test failed pre-import predicate'() {
+        given:
+        def importConfig = ImportConfiguration.builder(Customer, InputDataFormat.XLSX)
+                .addSimplePropertyMapping("name", "Name")
+                .addSimplePropertyMapping("email", "Email")
+                .withTransactionStrategy(ImportTransactionStrategy.SINGLE_TRANSACTION)
+                .withPreImportPredicate(entityExtractionResult -> {
+                    Customer customer = entityExtractionResult.entity as Customer
+                    if (!customer.email.contains('@mail.com')) {
+                        throw new IllegalArgumentException("Incorrect email");
+                    }
+                    return true
+                })
+                .build()
+        InputStream xlsxContent = resources.getResourceAsStream("/test_support/input_data_files/xlsx/customers.xlsx")
+
+        when: 'data imported'
+        def importResult = dataImporter.importData(importConfig, xlsxContent)
+
+        then:
+        !importResult.success
+        importResult.importedEntityIds.size() == 0
+        importResult.failedEntities.size() == 0
+        importResult.errorMessage == 'Error while importing the data: Incorrect email'
+    }
+
     def 'test failed import with FAIL_IF_MISSING import policy'() {
         given:
         def importConfig = ImportConfiguration.builder(OrderLine, InputDataFormat.XML)

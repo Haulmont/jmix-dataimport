@@ -28,7 +28,8 @@ import test_support.entity.Product
 
 class CsvDataExtractorTest extends DataImportSpec {
 
-    protected CsvDataExtractor csvDataExtractor = new CsvDataExtractor();
+    @Autowired
+    protected CsvDataExtractor csvDataExtractor
 
     @Autowired
     protected Resources resources;

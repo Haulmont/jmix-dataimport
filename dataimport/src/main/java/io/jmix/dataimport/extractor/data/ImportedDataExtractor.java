@@ -43,4 +43,9 @@ public interface ImportedDataExtractor {
      * @return an instance of {@link ImportedData} containing list of {@link ImportedDataItem} with raw values for entity properties
      */
     ImportedData extract(ImportConfiguration importConfiguration, byte[] inputData);
+
+    /**
+     * @return supported format of input data
+     */
+    String getSupportedDataFormat();
 }

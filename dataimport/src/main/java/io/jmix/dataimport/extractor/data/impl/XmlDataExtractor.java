@@ -17,12 +17,14 @@
 package io.jmix.dataimport.extractor.data.impl;
 
 import io.jmix.core.common.util.Dom4j;
+import io.jmix.dataimport.InputDataFormat;
 import io.jmix.dataimport.configuration.ImportConfiguration;
 import io.jmix.dataimport.extractor.data.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
+import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Component("datimp_XmlDataExtractor")
 public class XmlDataExtractor implements ImportedDataExtractor {
 
     @Override
@@ -44,6 +47,11 @@ public class XmlDataExtractor implements ImportedDataExtractor {
     public ImportedData extract(ImportConfiguration importConfiguration, byte[] inputData) {
         Document document = Dom4j.readDocument(new ByteArrayInputStream(inputData));
         return getImportedData(document);
+    }
+
+    @Override
+    public String getSupportedDataFormat() {
+        return InputDataFormat.XML;
     }
 
     protected ImportedData getImportedData(Document document) {

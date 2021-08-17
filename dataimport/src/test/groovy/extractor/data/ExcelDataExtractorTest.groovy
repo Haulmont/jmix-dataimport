@@ -27,7 +27,8 @@ import test_support.DataImportSpec
 
 class ExcelDataExtractorTest extends DataImportSpec {
 
-    protected ExcelDataExtractor excelDataExtractor = new ExcelDataExtractor();
+    @Autowired
+    protected ExcelDataExtractor excelDataExtractor
 
     @Autowired
     protected Resources resources;

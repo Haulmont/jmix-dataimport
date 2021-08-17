@@ -29,7 +29,8 @@ import test_support.entity.Product
 
 class XmlDataExtractorTest extends DataImportSpec {
 
-    protected XmlDataExtractor xmlDataExtractor = new XmlDataExtractor();
+    @Autowired
+    protected XmlDataExtractor xmlDataExtractor
 
     @Autowired
     protected Resources resources;
